@@ -168,16 +168,17 @@ def _make_tasks(
 class MT1(Benchmark):
     """The MT1 benchmark. A goal-conditioned RL environment for a single Metaworld task."""
 
-    ENV_NAMES = list(_env_dict.ALL_V2_ENVIRONMENTS.keys())
+    ENV_NAMES = _env_dict.ALL_V2_ENVIRONMENTS
 
-    def __init__(self, env_name, seed=None):
+    def __init__(self, env_name: str, arm_name: str = "sawyer", seed=None):
         super().__init__()
         if env_name not in _env_dict.ALL_V2_ENVIRONMENTS:
             raise ValueError(f"{env_name} is not a V2 environment")
-        cls = _env_dict.ALL_V2_ENVIRONMENTS[env_name]
+
+        cls = _env_dict.MT50_V2[arm_name][env_name]
         self._train_classes = OrderedDict([(env_name, cls)])
         self._test_classes = OrderedDict([(env_name, cls)])
-        args_kwargs = _env_dict.ML1_args_kwargs[env_name]
+        args_kwargs = _env_dict.MT50_V2_ARGS_KWARGS[arm_name][env_name]
 
         self._train_tasks = _make_tasks(
             self._train_classes, {env_name: args_kwargs}, _MT_OVERRIDE, seed=seed
@@ -189,11 +190,11 @@ class MT1(Benchmark):
 class MT10(Benchmark):
     """The MT10 benchmark. Contains 10 tasks in its train set. Has an empty test set."""
 
-    def __init__(self, seed=None):
+    def __init__(self, arm_name: str = "sawyer", seed=None):
         super().__init__()
-        self._train_classes = _env_dict.MT10_V2
+        self._train_classes = _env_dict.MT10_V2[arm_name]
         self._test_classes = OrderedDict()
-        train_kwargs = _env_dict.MT10_V2_ARGS_KWARGS
+        train_kwargs = _env_dict.MT10_V2_ARGS_KWARGS[arm_name]
         self._train_tasks = _make_tasks(
             self._train_classes, train_kwargs, _MT_OVERRIDE, seed=seed
         )
@@ -205,11 +206,12 @@ class MT10(Benchmark):
 class MT50(Benchmark):
     """The MT50 benchmark. Contains all (50) tasks in its train set. Has an empty test set."""
 
-    def __init__(self, seed=None):
+    def __init__(self, arm_name: str = "sawyer", seed=None):
         super().__init__()
-        self._train_classes = _env_dict.MT50_V2
+        self.arm_name = arm_name
+        self._train_classes = _env_dict.MT50_V2[arm_name]
         self._test_classes = OrderedDict()
-        train_kwargs = _env_dict.MT50_V2_ARGS_KWARGS
+        train_kwargs = _env_dict.MT50_V2_ARGS_KWARGS[arm_name]
         self._train_tasks = _make_tasks(
             self._train_classes, train_kwargs, _MT_OVERRIDE, seed=seed
         )
@@ -225,17 +227,17 @@ class ML1(Benchmark):
     """The ML1 benchmark. A meta-RL environment for a single Metaworld task. The train and test set contain different goal positions.
     The goal position is not part of the observation."""
 
-    ENV_NAMES = list(_env_dict.ALL_V2_ENVIRONMENTS.keys())
+    ENV_NAMES = _env_dict.ALL_V2_ENVIRONMENTS
 
-    def __init__(self, env_name, seed=None):
+    def __init__(self, env_name, arm_name: str = "sawyer", seed=None):
         super().__init__()
         if env_name not in _env_dict.ALL_V2_ENVIRONMENTS:
             raise ValueError(f"{env_name} is not a V2 environment")
 
-        cls = _env_dict.ALL_V2_ENVIRONMENTS[env_name]
+        cls = _env_dict.MT50_V2[arm_name][env_name]
         self._train_classes = OrderedDict([(env_name, cls)])
         self._test_classes = self._train_classes
-        args_kwargs = _env_dict.ML1_args_kwargs[env_name]
+        args_kwargs = _env_dict.MT50_V2_ARGS_KWARGS[arm_name][env_name]
 
         self._train_tasks = _make_tasks(
             self._train_classes, {env_name: args_kwargs}, _ML_OVERRIDE, seed=seed
@@ -251,13 +253,13 @@ class ML1(Benchmark):
 class ML10(Benchmark):
     """The ML10 benchmark. Contains 10 tasks in its train set and 5 tasks in its test set. The goal position is not part of the observation."""
 
-    def __init__(self, seed=None):
+    def __init__(self, arm_name: str = "sawyer", seed=None):
         super().__init__()
-        self._train_classes = _env_dict.ML10_V2["train"]
-        self._test_classes = _env_dict.ML10_V2["test"]
-        train_kwargs = _env_dict.ML10_ARGS_KWARGS["train"]
+        self._train_classes = _env_dict.ML10_V2[arm_name]["train"]
+        self._test_classes = _env_dict.ML10_V2[arm_name]["test"]
+        train_kwargs = _env_dict.ML10_ARGS_KWARGS[arm_name]["train"]
 
-        test_kwargs = _env_dict.ML10_ARGS_KWARGS["test"]
+        test_kwargs = _env_dict.ML10_ARGS_KWARGS[arm_name]["test"]
         self._train_tasks = _make_tasks(
             self._train_classes, train_kwargs, _ML_OVERRIDE, seed=seed
         )
@@ -270,12 +272,12 @@ class ML10(Benchmark):
 class ML45(Benchmark):
     """The ML45 benchmark. Contains 45 tasks in its train set and 5 tasks in its test set (50 in total). The goal position is not part of the observation."""
 
-    def __init__(self, seed=None):
+    def __init__(self, arm_name: str = "sawyer", seed=None):
         super().__init__()
-        self._train_classes = _env_dict.ML45_V2["train"]
-        self._test_classes = _env_dict.ML45_V2["test"]
-        train_kwargs = _env_dict.ML45_ARGS_KWARGS["train"]
-        test_kwargs = _env_dict.ML45_ARGS_KWARGS["test"]
+        self._train_classes = _env_dict.ML45_V2[arm_name]["train"]
+        self._test_classes = _env_dict.ML45_V2[arm_name]["test"]
+        train_kwargs = _env_dict.ML45_ARGS_KWARGS[arm_name]["train"]
+        test_kwargs = _env_dict.ML45_ARGS_KWARGS[arm_name]["test"]
 
         self._train_tasks = _make_tasks(
             self._train_classes, train_kwargs, _ML_OVERRIDE, seed=seed
