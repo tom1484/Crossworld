@@ -15,7 +15,7 @@ from metaworld.envs.mujoco.arm_env import ArmEnv
 RenderMode: TypeAlias = "Literal['human', 'rgb_array', 'depth_array']"
 
 
-class SawyerXYZEnv(ArmEnv):
+class PandaEnv(ArmEnv):
 
     _HAND_SPACE = Box(
         np.array([-0.525, 0.348, -0.0525]),
@@ -72,22 +72,23 @@ class SawyerXYZEnv(ArmEnv):
         Returns:
             3-element position.
         """
-        right_finger_pos = self.data.site("rightEndEffector")
-        left_finger_pos = self.data.site("leftEndEffector")
+        right_finger_pos = self.data.body("finger_joint1_tip")
+        left_finger_pos = self.data.body("finger_joint1_tip")
         tcp_center = (right_finger_pos.xpos + left_finger_pos.xpos) / 2.0
         return tcp_center
 
     @property
     def left_pad(self):
-        return self.get_body_com("leftpad")
+        return self.get_body_com("finger_joint1_tip")
 
     @property
     def right_pad(self):
-        return self.get_body_com("rightpad")
+        return self.get_body_com("finger_joint2_tip")
 
     def get_endeff_pos(self) -> npt.NDArray[Any]:
         """Returns the position of the end effector."""
-        return self.data.body("hand").xpos
+        # return self.data.body("hand").xpos
+        raise NotImplementedError
 
     def touching_object(self, object_geom_id: int) -> bool:
         """Determines whether the gripper is touching the object with given id.
@@ -99,8 +100,8 @@ class SawyerXYZEnv(ArmEnv):
             Whether the gripper is touching the object
         """
 
-        leftpad_geom_id = self.data.geom("leftpad_geom").id
-        rightpad_geom_id = self.data.geom("rightpad_geom").id
+        leftpad_geom_id = self.data.geom("finger1_pad_collision").id
+        rightpad_geom_id = self.data.geom("finger2_pad_collision").id
 
         leftpad_object_contacts = [
             x
