@@ -1,6 +1,7 @@
 # Plots and figures
 scripts/figures/
 scripts/movies*
+render_output/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -137,9 +137,13 @@ SAWYER_ENVIRONMENTS = OrderedDict(
 
 ARM_NAMES = ["sawyer"]
 
-ARM_ENV_CLS_MAPS = [SAWYER_ENVIRONMENTS]
-
-ARM_INDICES = OrderedDict([(arm, index) for index, arm in enumerate(ARM_NAMES)])
+ARM_ENV_CLS_MAPS = OrderedDict(
+    (
+        ("sawyer", SAWYER_ENVIRONMENTS),
+        # ("panda", PANDA_ENVIRONMENTS),
+        # ("jaco", JACO_ENVIRONMENTS),
+    )
+)
 
 
 def _get_env_dict(env_names: Sequence[str], arm_name: str = "sawyer") -> EnvDict:
@@ -152,7 +156,7 @@ def _get_env_dict(env_names: Sequence[str], arm_name: str = "sawyer") -> EnvDict
     Returns:
         The appropriate `OrderedDict.
     """
-    ENV_CLS_MAP = ARM_ENV_CLS_MAPS[ARM_INDICES[arm_name]]
+    ENV_CLS_MAP = ARM_ENV_CLS_MAPS[arm_name]
     return OrderedDict(
         [
             (env_name, env_cls)

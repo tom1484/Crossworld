@@ -23,10 +23,13 @@ import sys
 import os
 from typing import Any, Dict, List, Optional, Tuple, Union, Callable, Type, TypeVar
 import numpy as np
-import metaworld
-from metaworld import Task
 from collections import OrderedDict
 from datetime import datetime
+
+import metaworld
+from metaworld import Task
+from metaworld.policies.policy import Policy
+from metaworld.policies.policy_dict import ARM_POLICY_CLS_MAPS
 
 # Add PyGame import for interactive control
 try:
@@ -58,20 +61,20 @@ except ImportError:
 # Remove the problematic MjViewer import
 
 # Dictionary mapping environment names to their policy classes (when available)
-POLICY_MAP: Dict[str, str] = {
-    # Sawyer policies
-    "door-open-v2": "SawyerDoorOpenV2Policy",
-    "door-close-v2": "SawyerDoorCloseV2Policy",
-    "door-lock-v2": "SawyerDoorLockV2Policy",
-    "door-unlock-v2": "SawyerDoorUnlockV2Policy",
-    "drawer-open-v2": "SawyerDrawerOpenV2Policy",
-    "drawer-close-v2": "SawyerDrawerCloseV2Policy",
-    "button-press-v2": "SawyerButtonPressV2Policy",
-    "peg-insert-side-v2": "SawyerPegInsertSideV2Policy",
-    "window-open-v2": "SawyerWindowOpenV2Policy",
-    "window-close-v2": "SawyerWindowCloseV2Policy",
-    # Add more mappings as needed
-}
+# POLICY_MAP: Dict[str, str] = {
+#     # Sawyer policies
+#     "door-open-v2": "SawyerDoorOpenV2Policy",
+#     "door-close-v2": "SawyerDoorCloseV2Policy",
+#     "door-lock-v2": "SawyerDoorLockV2Policy",
+#     "door-unlock-v2": "SawyerDoorUnlockV2Policy",
+#     "drawer-open-v2": "SawyerDrawerOpenV2Policy",
+#     "drawer-close-v2": "SawyerDrawerCloseV2Policy",
+#     "button-press-v2": "SawyerButtonPressV2Policy",
+#     "peg-insert-side-v2": "SawyerPegInsertSideV2Policy",
+#     "window-open-v2": "SawyerWindowOpenV2Policy",
+#     "window-close-v2": "SawyerWindowCloseV2Policy",
+#     # Add more mappings as needed
+# }
 
 # Robot-specific environment prefix mapping
 ROBOT_ENV_PREFIX: Dict[str, str] = {
@@ -88,21 +91,14 @@ ActionType = np.ndarray
 BenchmarkType = Any  # metaworld.Benchmark
 
 
-def get_policy_for_env(env_name: str) -> Optional[Any]:
+def get_policy(env_name: str, arm_name: str) -> Optional[Any]:
     """Attempt to load a policy for the given environment name."""
-    if env_name not in POLICY_MAP:
+    POLICY_CLS_MAP = ARM_POLICY_CLS_MAPS.get(arm_name, {})
+    policy_class: Policy = POLICY_CLS_MAP.get(env_name)
+    if policy_class is None:
         return None
 
-    policy_class_name: str = POLICY_MAP[env_name]
-    module_name: str = f"metaworld.policies.{env_name.replace('-', '_')}_policy"
-
-    try:
-        policy_module = importlib.import_module(module_name)
-        policy_class = getattr(policy_module, policy_class_name)
-        return policy_class()
-    except (ImportError, AttributeError) as e:
-        print(f"Could not load policy for {env_name}: {e}")
-        return None
+    return policy_class()
 
 
 def get_environment_names(benchmark_class: BenchmarkType) -> List[str]:
@@ -156,94 +152,132 @@ def list_tasks_for_env(benchmark: BenchmarkType, env_name: str) -> None:
             print(f"  Task {i}: {task.env_name}")
 
 
-def save_render_frame(
-    env: EnvType, output_dir: str, frame_num: int, prefix: str = "frame"
-) -> Optional[str]:
+def save_render_frames(
+    output_dir: str, frames: List[np.ndarray], prefix: str = "frame", save_raw: bool = False
+):
+    """Save rendered frames as images and combine them into a video.
+
+    Args:
+        output_dir: Directory to save images and video
+        frames: List of frames to save and combine
+        prefix: Filename prefix
     """
-    Render the environment and save the frame as an image.
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
+    raw_dir: str = None
+    if save_raw:
+        raw_dir = os.path.join(output_dir, "raw")
+        if not os.path.exists(raw_dir):
+            os.makedirs(raw_dir)
+
+    # Save individual frames as images
+    if raw_dir:
+        for i, frame in enumerate(frames):
+            filename: str = f"{prefix}_{i:04d}.png"
+            filepath: str = os.path.join(raw_dir, filename)
+
+            # Save the image using PIL
+            try:
+                from PIL import Image
+
+                Image.fromarray(frame).save(filepath)
+            except ImportError:
+                print("PIL not available, trying cv2...")
+                try:
+                    import cv2
+
+                    # OpenCV expects BGR format
+                    if len(frame.shape) == 3 and frame.shape[2] == 3:
+                        bgr_array = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                        cv2.imwrite(filepath, bgr_array)
+                    else:
+                        cv2.imwrite(filepath, frame)
+                except ImportError:
+                    print(
+                        "WARNING: Neither PIL nor OpenCV available. Cannot save rendered frames."
+                    )
+
+    # Combine all frames into a video
+    try:
+        import cv2
+
+        if not frames:
+            print("No frames to combine into video.")
+            return
+
+        height, width = frames[0].shape[:2]
+        video_filepath = os.path.join(output_dir, f"episode.mp4")
+        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+        fps = 30  # Frames per second
+        video_writer = cv2.VideoWriter(video_filepath, fourcc, fps, (width, height))
+
+        for frame in frames:
+            # Convert to BGR if needed
+            if len(frame.shape) == 3 and frame.shape[2] == 3:
+                frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+            else:
+                frame_bgr = frame
+            video_writer.write(frame_bgr)
+
+        video_writer.release()
+        print(f"Video saved to {video_filepath}")
+    except ImportError:
+        print("OpenCV not available, skipping video creation.")
+
+
+def render_frame(env: EnvType, frames: List[np.ndarray]) -> None:
+    """
+    Render the environment and append the frame in a list.
 
     Args:
         env: The environment to render
-        output_dir: Directory to save images
-        frame_num: Frame number (for filename)
-        prefix: Filename prefix
-
-    Returns:
-        Path to the saved image file or None if rendering failed
+        frames: List to store rendered frames
     """
+    # Try different rendering approaches to handle API differences
+    rgb_array: Optional[np.ndarray] = None
+
+    # For MetaWorld environments, first try without any arguments
+    # This should work with initialized render_mode
     try:
-        # Try different rendering approaches to handle API differences
-        rgb_array: Optional[np.ndarray] = None
-
-        # For MetaWorld environments, first try without any arguments
-        # This should work with initialized render_mode
-        try:
-            rgb_array = env.render()
-        except (TypeError, ValueError, AttributeError):
-            pass
-
-        # If that failed and we still don't have an image, try simple mode parameter
-        # if rgb_array is None:
-        #     try:
-        #         rgb_array = env.render(mode="rgb_array")
-        #     except (TypeError, ValueError, AttributeError):
-        #         pass
-
-        # For some specific MetaWorld environments, try sim.render directly if available
-        # if rgb_array is None and hasattr(env, "sim"):
-        #     try:
-        #         rgb_array = env.sim.render(
-        #             camera_name=camera_name, width=500, height=500, depth=False
-        #         )
-        #     except (TypeError, ValueError, AttributeError):
-        #         pass
-
-        # Another variant for some MetaWorld environments
-        # if rgb_array is None and hasattr(env, "render_obs"):
-        #     try:
-        #         rgb_array = env.render_obs()
-        #     except (TypeError, ValueError, AttributeError):
-        #         pass
-
+        rgb_array = env.render()
+    except (TypeError, ValueError, AttributeError):
         if rgb_array is None:
             print(
                 "Warning: Could not render the environment - all rendering methods failed"
             )
-            return None
+            return
 
-        # Save the image using PIL
-        try:
-            from PIL import Image
+    frames.append(rgb_array)
 
-            filename: str = f"{prefix}_{frame_num:04d}.png"
-            filepath: str = os.path.join(output_dir, filename)
 
-            # Create Image from numpy array and save
-            Image.fromarray(rgb_array).save(filepath)
-            return filepath
-        except ImportError:
-            print("PIL not available, trying cv2...")
-            try:
-                import cv2
+# Add common PyGame setup functions
+def init_pygame_common(window_size: Tuple[int, int]) -> Tuple[Any, Any]:
+    import pygame
+    pygame.init()
+    screen = pygame.display.set_mode(window_size)
+    pygame.display.set_caption("MetaWorld Progress")
+    clock = pygame.time.Clock()
+    return screen, clock
 
-                filename: str = f"{prefix}_{frame_num:04d}.png"
-                filepath: str = os.path.join(output_dir, filename)
-
-                # OpenCV expects BGR format
-                if len(rgb_array.shape) == 3 and rgb_array.shape[2] == 3:
-                    bgr_array = cv2.cvtColor(rgb_array, cv2.COLOR_RGB2BGR)
-                    cv2.imwrite(filepath, bgr_array)
-                else:
-                    cv2.imwrite(filepath, rgb_array)
-                return filepath
-            except ImportError:
-                print(
-                    "WARNING: Neither PIL nor OpenCV available. Cannot save rendered frames."
-                )
-                return None
-    except Exception as e:
-        print(f"Error saving render frame: {e}")
-        return None
+def process_common_pygame_events(clock: Any) -> bool:
+    import pygame
+    for event in pygame.event.get():
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                return False
+            elif event.key == pygame.K_SPACE:
+                print("Paused. Press SPACE to resume or ESC to quit.")
+                paused = True
+                while paused:
+                    for evt in pygame.event.get():
+                        if evt.type == pygame.KEYDOWN:
+                            if evt.key == pygame.K_SPACE:
+                                paused = False
+                            elif evt.key == pygame.K_ESCAPE:
+                                return False
+                    clock.tick(10)
+    return True
 
 
 def record_trajectory(
@@ -252,6 +286,7 @@ def record_trajectory(
     max_steps: int = 500,
     output_dir: Optional[str] = None,
     delay: float = 0.0,
+    window_size: Tuple[int, int] = (640, 480)
 ) -> Dict[str, Any]:
     """
     Execute an environment trajectory using the provided policy or random actions.
@@ -266,10 +301,17 @@ def record_trajectory(
     Returns:
         Dictionary containing trajectory data
     """
-    obs: np.ndarray = env.reset()
+    obs: np.ndarray
+    info: Dict
+    obs, info = env.reset()
+
     done: bool = False
     count: int = 0
     success: bool = False
+
+    # Save initial render
+    rendered_frames: List[np.ndarray] = []
+    render_frame(env, rendered_frames)
 
     trajectory_data: Dict[str, Any] = {
         "observations": [],
@@ -277,41 +319,52 @@ def record_trajectory(
         "rewards": [],
         "next_observations": [],
         "success": False,
-        "saved_frames": [],
     }
 
+    # Initialize minimal PyGame display if available
+    if PYGAME_AVAILABLE:
+        screen, clock = init_pygame_common(window_size)
+    
     while count < max_steps and not done:
-        action: np.ndarray
         if policy:
             action = policy.get_action(obs)
         else:
             action = env.action_space.sample()
 
-        # trajectory_data['observations'].append(obs.copy())
-        # trajectory_data['actions'].append(action.copy())
         trajectory_data["observations"].append(obs)
         trajectory_data["actions"].append(action)
-
-        next_obs: np.ndarray
-        reward: float
-        terminated: bool
-        truncated: bool
-        info: Dict[str, Any]
 
         next_obs, reward, terminated, truncated, info = env.step(action)
         done = terminated or truncated
 
         trajectory_data["rewards"].append(reward)
-        # trajectory_data['next_observations'].append(next_obs.copy())
         trajectory_data["next_observations"].append(next_obs)
 
-        # Save render frame if output directory is provided
+        # If output_dir provided, save frame (using existing render_frame if applicable)
         if output_dir:
-            frame_path = save_render_frame(env, output_dir, count)
-            if frame_path:
-                trajectory_data["saved_frames"].append(frame_path)
+            render_frame(env, rendered_frames)
 
-        # Print trajectory information
+        # --- New PyGame integration for progress display ---
+        if PYGAME_AVAILABLE:
+            if not process_common_pygame_events(clock):
+                print("Terminated by user via PyGame event.")
+                break
+            try:
+                rgb_array = env.render()
+                if rgb_array is not None:
+                    # Convert image for PyGame display
+                    import pygame
+                    import numpy as np
+                    arr = np.transpose(rgb_array, (1, 0, 2)) if len(rgb_array.shape) == 3 else rgb_array
+                    surface = pygame.surfarray.make_surface(arr)
+                    surface = pygame.transform.scale(surface, window_size)
+                    screen.blit(surface, (0, 0))
+                    pygame.display.update()
+                    clock.tick(60)
+            except Exception as e:
+                print(f"Warning: Could not update PyGame display: {e}")
+        # --- End PyGame integration ---
+
         print(f"Step: {count}, Reward: {reward:.4f}")
         print(f"Action: {action}")
         if "success" in info:
@@ -326,6 +379,16 @@ def record_trajectory(
         count += 1
 
     trajectory_data["success"] = success
+
+    if PYGAME_AVAILABLE:
+        import pygame
+        pygame.quit()
+
+    # Save rendered frames into a video if output_dir is provided
+    if output_dir and rendered_frames:
+        save_render_frames(output_dir, rendered_frames, prefix="frame")
+        print(f"Rendered frames saved to {output_dir}")
+
     return trajectory_data
 
 
@@ -352,10 +415,8 @@ def keyboard_control(
         )
         return
 
-    # Initialize PyGame
-    pygame.init()
-    screen = pygame.display.set_mode(window_size)
-    pygame.display.set_caption("MetaWorld Environment Control")
+    # Use common PyGame initialization
+    screen, clock = init_pygame_common(window_size)
 
     # Define key to action mapping
     char_to_action = {
@@ -421,10 +482,8 @@ def keyboard_control(
     clock = pygame.time.Clock()
 
     # Save initial render
-    if output_dir:
-        frame_path = save_render_frame(env, output_dir, step_count)
-        if frame_path:
-            print(f"Initial frame saved to: {frame_path}")
+    rendered_frames: List[np.ndarray] = []
+    render_frame(env, rendered_frames)
 
     # Lists to store recorded keypoints instead of every step
     keypoint_observations: List[np.ndarray] = []
@@ -580,7 +639,7 @@ def keyboard_control(
 
         # Save render frame if requested and a keypoint was just recorded
         if output_dir and recording_flash_time == 29:  # Just after recording
-            frame_path = save_render_frame(env, output_dir, step_count)
+            render_frame(env, rendered_frames)
 
         # Display text information
         print(f"Step: {step_count}")
@@ -600,6 +659,11 @@ def keyboard_control(
         # Control the frame rate
         clock.tick(60)  # 60 FPS
         time.sleep(step_delay)  # Add additional delay if needed
+
+    # Save rendered frames into a video if output_dir is provided
+    if output_dir and rendered_frames:
+        save_render_frames(output_dir, rendered_frames, prefix="frame")
+        print(f"Rendered frames saved to {output_dir}")
 
     # Save recorded keypoints if we have any
     if (
@@ -682,7 +746,7 @@ def main() -> None:
         "--benchmark",
         type=str,
         default="ml10",
-        choices=["ml10", "ml45", "mt10", "mt50"],
+        choices=["mt1", "mt10", "mt50", "ml1", "ml10", "ml45"],
         help="Benchmark to use (default: ml10 for faster loading)",
     )
     parser.add_argument(
@@ -694,9 +758,9 @@ def main() -> None:
     parser.add_argument(
         "--camera-name",
         type=str,
-        default="corner",
+        default="frontview",
         choices=["corner", "corner2", "corner3", "frontview"],
-        help="Name of camera for rendering (default: corner)"
+        help="Name of camera for rendering (default: frontview)",
     )
 
     args = parser.parse_args()
@@ -717,7 +781,7 @@ def main() -> None:
     output_dir: Optional[str] = args.output_dir
     if output_dir is None:
         timestamp: str = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_dir = f"/home/tomchen/Projects/flow-decomposer/Peerworld/scripts/render_output/{timestamp}"
+        output_dir = f"./render_output/{timestamp}"
 
     if not os.path.exists(output_dir):
         try:
@@ -771,8 +835,10 @@ def main() -> None:
     if args.list_envs:
         env_names: List[str] = get_environment_names(benchmark)
         print("\nAvailable environments:")
+
+        POLICY_CLS_MAP = ARM_POLICY_CLS_MAPS.get(args.arm_name, {})
         for env_name in env_names:
-            policy_available: bool = env_name in POLICY_MAP
+            policy_available: bool = env_name in POLICY_CLS_MAP
             arm_name: str = "sawyer"  # Default
             if env_name.startswith("panda_"):
                 arm_name = "panda"
@@ -816,8 +882,11 @@ def main() -> None:
         if env_name in benchmark.train_classes:
             env_cls: Type[EnvType] = benchmark.train_classes[env_name]
             # Use 'rgb_array' render mode for headless operation
-            env: EnvType = env_cls(render_mode="rgb_array", camera_name=args.camera_name)
-            env.ignore_termination = True
+            env: EnvType = env_cls(
+                render_mode="rgb_array", camera_name=args.camera_name,
+            )
+            env.done_on_success=args.policy_test
+            env.ignore_termination = args.pygame_control
 
             # Find matching tasks
             matching_tasks: List[Task] = [
@@ -866,7 +935,7 @@ def main() -> None:
                 base_env_name = env_name[len(prefix) :]
                 break
 
-        policy = get_policy_for_env(base_env_name)
+        policy = get_policy(base_env_name, args.arm_name)
         if not policy:
             print(f"No policy available for {base_env_name}, using random actions")
 
@@ -895,8 +964,6 @@ def main() -> None:
                 env, policy=policy, max_steps=args.steps, output_dir=output_dir
             )
             print(f"Trajectory completed. Success: {trajectory['success']}")
-            if trajectory["saved_frames"]:
-                print(f"Saved {len(trajectory['saved_frames'])} frames to {output_dir}")
     except KeyboardInterrupt:
         print("\nInterrupted by user")
     except Exception as e:
