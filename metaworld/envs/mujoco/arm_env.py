@@ -14,9 +14,7 @@ from gymnasium.utils import seeding
 from gymnasium.utils.ezpickle import EzPickle
 from typing_extensions import TypeAlias
 
-# from metaworld.envs import reward_utils
 from metaworld.types import XYZ, EnvironmentStateDict, ObservationDict, Task
-from metaworld.envs.mujoco.mujoco_env import _assert_task_is_set
 
 
 RenderMode: TypeAlias = "Literal['human', 'rgb_array', 'depth_array']"
