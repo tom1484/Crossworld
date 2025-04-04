@@ -23,6 +23,11 @@ RenderMode: TypeAlias = "Literal['human', 'rgb_array', 'depth_array']"
 class MocapBase(mjenv_gym, ABC):
     """Provides some commonly-shared functions for Arm Mujoco envs that use mocap for XYZ control."""
 
+    # Used to initialize the arm's joints at a proper position to
+    # prevent singularity during mocap initialization
+    _INIT_HAND_QPOS: npt.NDArray[np.float64] = None
+    _HAND_QUAT: npt.NDArray[np.float64] = None
+
     mocap_low = np.array([-0.2, 0.5, 0.06])
     mocap_high = np.array([0.2, 0.7, 0.6])
     metadata = {
@@ -51,7 +56,6 @@ class MocapBase(mjenv_gym, ABC):
             camera_name=camera_name,
             camera_id=camera_id,
         )
-        self.reset_mocap_welds()
         self.frame_skip = frame_skip
 
     def get_env_state(self) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
@@ -104,15 +108,40 @@ class MocapBase(mjenv_gym, ABC):
     # START Arm specific methods #
     ##############################
 
-    @abstractmethod
-    def reset_mocap_welds(self) -> None:
-        """Resets the mocap welds that we use for actuation."""
-        # if self.model.nmocap > 0 and self.model.eq_data is not None:
-        #     for i in range(self.model.eq_data.shape[0]):
-        #         if self.model.eq_type[i] == mujoco.mjtEq.mjEQ_WELD:
-        #             self.model.eq_data[i] = np.array(
-        #                 [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 5.0]
-        #             )
+    # @abstractmethod
+    def reset_hand_qpos(self) -> None:
+        """Resets the qpos of the arm."""
+        # Save current equality constraint activation settings.
+        original_eq_active = self.data.eq_active.copy()
+
+        # Disable equality constraints for mocap welds.
+        weld_mask = self.model.eq_type == mujoco.mjtEq.mjEQ_WELD
+        self.data.eq_active[weld_mask] = 0
+
+        # Reset positions and velocities.
+        for i in range(self._INIT_HAND_QPOS.shape[0]):
+            self.data.qpos[i] = self._INIT_HAND_QPOS[i]
+
+        # Perform forward simulation for the specified number of steps.
+        mujoco.mj_forward(self.model, self.data)
+
+        # Restore the original equality constraint activation settings.
+        self.data.eq_active[:] = original_eq_active
+
+    def _reset_hand(self, steps: int = 50) -> None:
+        """Resets the hand position.
+
+        Args:
+            steps: The number of steps to take to reset the hand.
+        """
+        self.reset_hand_qpos()
+
+        mocap_id = self.model.body_mocapid[self.data.body("mocap").id]
+        for _ in range(steps):
+            self.data.mocap_pos[mocap_id][:] = self.hand_init_pos
+            self.data.mocap_quat[mocap_id][:] = self._HAND_QUAT
+            self.do_simulation(self.parse_gripper_action(-1), self.frame_skip)
+        self.init_tcp = self.tcp_center
 
     @property
     @abstractmethod
@@ -140,6 +169,21 @@ class MocapBase(mjenv_gym, ABC):
         Returns:
             gym.spaces.Box: The observation space for the arm
         """
+
+    @abstractmethod
+    def parse_gripper_action(
+        self, gripper_action: np.float32
+    ) -> npt.NDArray[np.float32]:
+        """Parses the gripper action.
+
+        Args:
+            action (np.float32): The action to parse
+
+        Returns:
+            The parsed action
+        """
+        # return np.array([gripper_action, -gripper_action])
+        pass
 
 
 class ArmEnv(MocapBase, EzPickle):
@@ -194,7 +238,7 @@ class ArmEnv(MocapBase, EzPickle):
             mocap_high = hand_high
         self.mocap_low = np.hstack(mocap_low)
         self.mocap_high = np.hstack(mocap_high)
-        
+
         self.done_on_success = done_on_success
         # For policy testing and debug purpose
         self.ignore_termination = ignore_termination
@@ -422,9 +466,14 @@ class ArmEnv(MocapBase, EzPickle):
         assert len(action) == 4, f"Actions should be size 4, got {len(action)}"
         self.set_xyz_action(action[:3])
 
-        if not self.ignore_termination and self.curr_path_length >= self.max_path_length:
+        if (
+            not self.ignore_termination
+            and self.curr_path_length >= self.max_path_length
+        ):
             raise ValueError("You must reset the env manually once truncate==True")
-        self.do_simulation([action[-1], -action[-1]], n_frames=self.frame_skip)
+        self.do_simulation(
+            self.parse_gripper_action(action[-1]), n_frames=self.frame_skip
+        )
         self.curr_path_length += 1
 
         # Running the simulator can sometimes mess up site positions, so
@@ -470,7 +519,7 @@ class ArmEnv(MocapBase, EzPickle):
         done = False
         if info["success"] and self.done_on_success:
             done = True
-        
+
         truncate = truncate and not self.ignore_termination
         done = done and not self.ignore_termination
 
@@ -509,19 +558,6 @@ class ArmEnv(MocapBase, EzPickle):
         obs[obs_dim : obs_dim + obs_dim] = self._prev_obs
         obs = obs.astype(np.float64)
         return obs, info
-
-    def _reset_hand(self, steps: int = 1) -> None:
-        """Resets the hand position.
-
-        Args:
-            steps: The number of steps to take to reset the hand.
-        """
-        mocap_id = self.model.body_mocapid[self.data.body("mocap").id]
-        for _ in range(steps):
-            self.data.mocap_pos[mocap_id][:] = self.hand_init_pos
-            self.data.mocap_quat[mocap_id][:] = np.array([1, 0, 1, 0])
-            self.do_simulation([-1, 1], self.frame_skip)
-        self.init_tcp = self.tcp_center
 
     def _get_state_rand_vec(self) -> npt.NDArray[np.float64]:
         """Gets or generates a random vector for the hand position at reset."""
@@ -630,7 +666,7 @@ class ArmEnv(MocapBase, EzPickle):
         Args:
             pos: The position to set as a numpy array of 3 elements (XYZ value).
         """
-        arm_nqpos = self._HAND_SPACE.low.size
+        arm_nqpos = self._INIT_HAND_QPOS.shape[0]
         qpos = self.data.qpos.flat.copy()
         qvel = self.data.qvel.flat.copy()
         # freejoint qpos: x, y, z qvel: vx, vy, vz, ax, ay, az
