@@ -18,6 +18,21 @@ RenderMode: TypeAlias = "Literal['human', 'rgb_array', 'depth_array']"
 
 class PandaEnv(ArmEnv):
 
+    _INIT_HAND_QPOS = np.array(
+        [
+            1.51067,
+            -1.57213,
+            -1.37564,
+            -2.53261,
+            -1.37605,
+            1.42732,
+            1.7101,
+            0.04,
+            -0.04,
+        ]
+    )
+    _HAND_QUAT = np.array([0.0, 0.0, -1.0, 0.0])
+
     _HAND_SPACE = Box(
         np.array([-0.525, 0.348, -0.0525]),
         np.array([+0.525, 1.025, 0.7]),
@@ -65,15 +80,6 @@ class PandaEnv(ArmEnv):
             np.array([+1, +1, +1, +1]),
             dtype=np.float32,
         )
-
-    def reset_mocap_welds(self) -> None:
-        """Resets the mocap welds that we use for actuation."""
-        if self.model.nmocap > 0 and self.model.eq_data is not None:
-            for i in range(self.model.eq_data.shape[0]):
-                if self.model.eq_type[i] == mujoco.mjtEq.mjEQ_WELD:
-                    self.model.eq_data[i] = np.array(
-                        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 5.0]
-                    )
 
     @property
     def tcp_center(self) -> npt.NDArray[Any]:
@@ -191,6 +197,19 @@ class PandaEnv(ArmEnv):
             ),
             dtype=np.float64,
         )
+
+    def parse_gripper_action(
+        self, gripper_action: np.float32
+    ) -> npt.NDArray[np.float32]:
+        """Parses the gripper action.
+
+        Args:
+            action (np.float32): The action to parse
+
+        Returns:
+            The parsed action
+        """
+        return np.array([gripper_action, -gripper_action])
 
     def _gripper_caging_reward(
         self,
@@ -347,7 +366,7 @@ class PandaEnv(ArmEnv):
             self.mocap_high,
         )
         self.data.mocap_pos = new_mocap_pos
-        self.data.mocap_quat = np.array([1, 0, 1, 0])
+        self.data.mocap_quat = self._HAND_QUAT
 
     @property
     def gripper_distance_apart(self):

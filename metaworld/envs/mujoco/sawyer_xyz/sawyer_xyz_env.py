@@ -18,6 +18,22 @@ RenderMode: TypeAlias = "Literal['human', 'rgb_array', 'depth_array']"
 
 class SawyerXYZEnv(ArmEnv):
 
+    # _INIT_HAND_QPOS = np.array([0, -1.18, 0, 2.18, 0, 0.57, 3.3161, 0.0208, -0.0208])
+    _INIT_HAND_QPOS = np.array(
+        [
+            2.20793,
+            -0.499013,
+            -1.35786,
+            2.16713,
+            1.29512,
+            1.13157,
+            1.89171,
+            -3.32903e-09,
+            -1.868e-05,
+        ]
+    )
+    _HAND_QUAT = np.array([1.0, 0.0, 1.0, 0.0])
+
     _HAND_SPACE = Box(
         np.array([-0.525, 0.348, -0.0525]),
         np.array([+0.525, 1.025, 0.7]),
@@ -72,7 +88,19 @@ class SawyerXYZEnv(ArmEnv):
             for i in range(self.model.eq_data.shape[0]):
                 if self.model.eq_type[i] == mujoco.mjtEq.mjEQ_WELD:
                     self.model.eq_data[i] = np.array(
-                        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 5.0]
+                        [
+                            0.0,
+                            0.0,
+                            0.0,  # relative position
+                            0.0,
+                            0.0,
+                            0.0,
+                            -1.0,  # relative quaternion
+                            0.0,
+                            0.0,
+                            0.0,
+                            5.0,  # solver parameters
+                        ]
                     )
 
     @property
@@ -191,6 +219,19 @@ class SawyerXYZEnv(ArmEnv):
             ),
             dtype=np.float64,
         )
+
+    def parse_gripper_action(
+        self, gripper_action: np.float32
+    ) -> npt.NDArray[np.float32]:
+        """Parses the gripper action.
+
+        Args:
+            action (np.float32): The action to parse
+
+        Returns:
+            The parsed action
+        """
+        return np.array([gripper_action, -gripper_action])
 
     def _gripper_caging_reward(
         self,
@@ -347,7 +388,7 @@ class SawyerXYZEnv(ArmEnv):
             self.mocap_high,
         )
         self.data.mocap_pos = new_mocap_pos
-        self.data.mocap_quat = np.array([1, 0, 1, 0])
+        self.data.mocap_quat = self._HAND_QUAT
 
     @property
     def gripper_distance_apart(self):

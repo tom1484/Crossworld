@@ -328,7 +328,7 @@
         </body>
     </body>
 
-    <body mocap="true" name="mocap" pos="0 0 0">
+    <body mocap="true" name="mocap" pos="0 0.4 0.2" quat="1 0 1 0">
         <!--For
         debugging, set the alpha to 1-->
         <!--<geom

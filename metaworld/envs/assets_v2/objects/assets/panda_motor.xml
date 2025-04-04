@@ -1,11 +1,10 @@
-<!-- TODO -->
-
 <mujocoinclude>
     <actuator>
         <position ctrllimited="true" ctrlrange="-1 1" joint="finger_joint2" kp="400"  user="1"/>
         <position ctrllimited="true" ctrlrange="-1 1" joint="finger_joint1" kp="400"  user="1"/>
+        <!-- <position ctrllimited="true" ctrlrange="-1 1" joint="joint4" kp="400" user="1"/> -->
     </actuator>
     <equality>
-        <weld body1="mocap" body2="hand" solref="0.02 1" />
+        <weld site1="mocap" site2="grip_site" solimp="0.9 0.95 0.001" solref="0.02 1" />
     </equality>
 </mujocoinclude>
