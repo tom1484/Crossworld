@@ -192,8 +192,8 @@ class SawyerStickPushEnvV2(SawyerXYZEnv):
         if high_density and medium_density:
             raise ValueError("Can only be either high_density or medium_density")
         # MARK: Left-right gripper information for caging reward----------------
-        left_pad = self.get_body_com("leftpad")
-        right_pad = self.get_body_com("rightpad")
+        left_pad = self.left_pad
+        right_pad = self.right_pad
 
         # get current positions of left and right pads (Y axis)
         pad_y_lr = np.hstack((left_pad[1], right_pad[1]))

@@ -118,7 +118,7 @@ class SawyerDoorLockEnvV2(SawyerXYZEnv):
         ), "`reset_model()` must be called before `compute_reward()`."
         del action
         obj = obs[4:7]
-        tcp = self.get_body_com("leftpad")
+        tcp = self.left_pad
 
         scale = np.array([0.25, 1.0, 0.5])
         tcp_to_obj = float(np.linalg.norm((obj - tcp) * scale))
