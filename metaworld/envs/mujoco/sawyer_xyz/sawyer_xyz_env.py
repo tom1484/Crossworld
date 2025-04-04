@@ -117,15 +117,16 @@ class SawyerXYZEnv(ArmEnv):
 
     @property
     def left_pad(self):
-        return self.get_body_com("leftpad")
+        return self.left_pad
 
     @property
     def right_pad(self):
-        return self.get_body_com("rightpad")
+        return self.right_pad
 
     def get_endeff_pos(self) -> npt.NDArray[Any]:
         """Returns the position of the end effector."""
-        return self.data.body("hand").xpos
+        # return self.data.body("hane").xpos
+        return self._get_site_pos("endeff")
 
     def touching_object(self, object_geom_id: int) -> bool:
         """Determines whether the gripper is touching the object with given id.
@@ -273,8 +274,8 @@ class SawyerXYZEnv(ArmEnv):
         if high_density and medium_density:
             raise ValueError("Can only be either high_density or medium_density")
         # MARK: Left-right gripper information for caging reward----------------
-        left_pad = self.get_body_com("leftpad")
-        right_pad = self.get_body_com("rightpad")
+        left_pad = self.left_pad
+        right_pad = self.right_pad
 
         # get current positions of left and right pads (Y axis)
         pad_y_lr = np.hstack((left_pad[1], right_pad[1]))
