@@ -12,7 +12,7 @@ def import_policy(arm_name: str, env_name: str) -> Policy | None:
     env_name = re.sub(r"-", r"_", env_name)
 
     module_name = f"{arm_name}_{env_name}_policy"
-    cls_name = ''.join(word.capitalize() for word in module_name.split('_'))
+    cls_name = "".join(word.capitalize() for word in module_name.split("_"))
 
     # import the module dynamically
     module_path = f"metaworld.policies.{arm_name}.{arm_name}_{env_name}_policy"
@@ -31,7 +31,13 @@ SAWYER_POLICIES = OrderedDict(
     [(env_name, import_policy("sawyer", env_name)) for env_name in ALL_V2_ENVIRONMENTS]
 )
 
-ARM_POLICY_CLS_MAPS = OrderedDict((("sawyer", SAWYER_POLICIES),))
+PANDA_POLICIES = OrderedDict(
+    [(env_name, import_policy("panda", env_name)) for env_name in ALL_V2_ENVIRONMENTS]
+)
+
+ARM_POLICY_CLS_MAPS = OrderedDict(
+    (("sawyer", SAWYER_POLICIES), ("panda", PANDA_POLICIES))
+)
 
 
 __all__ = [
