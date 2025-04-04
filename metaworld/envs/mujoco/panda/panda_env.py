@@ -87,8 +87,7 @@ class PandaEnv(ArmEnv):
 
     def get_endeff_pos(self) -> npt.NDArray[Any]:
         """Returns the position of the end effector."""
-        # return self.data.body("hand").xpos
-        raise NotImplementedError
+        return self.data.body("hand").xpos
 
     def touching_object(self, object_geom_id: int) -> bool:
         """Determines whether the gripper is touching the object with given id.
@@ -343,10 +342,10 @@ class PandaEnv(ArmEnv):
     @property
     def gripper_distance_apart(self):
         finger_right, finger_left = (
-            self.data.body("rightclaw"),
-            self.data.body("leftclaw"),
+            self.get_body_com("finger_joint2_tip"),
+            self.get_body_com("finger_joint1_tip"),
         )
-        gripper_distance_apart = np.linalg.norm(finger_right.xpos - finger_left.xpos)
+        gripper_distance_apart = np.linalg.norm(finger_right - finger_left)
         gripper_distance_apart = np.clip(gripper_distance_apart / 0.1, 0.0, 1.0)
         return gripper_distance_apart
 
