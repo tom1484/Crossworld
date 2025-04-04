@@ -1,5 +1,5 @@
 <mujocoinclude>
-  <compiler angle="radian" inertiafromgeom="auto" inertiagrouprange="0 0" />
+  <compiler angle="radian" inertiafromgeom="auto" inertiagrouprange="4 5" />
 
   <asset>
     <!-- Mount material and mesh -->
