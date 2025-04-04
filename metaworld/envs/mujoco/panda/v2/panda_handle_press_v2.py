@@ -2,19 +2,19 @@ from __future__ import annotations
 
 from typing import Any
 
-import mujoco
 import numpy as np
 import numpy.typing as npt
 from gymnasium.spaces import Box
 
 from metaworld.envs.asset_path_utils import full_v2_path_for
-# from metaworld.envs.mujoco.panda._panda_env import RenderMode, PandaEnv
 from metaworld.envs.mujoco.panda.panda_env import RenderMode, PandaEnv
 from metaworld.envs.mujoco.utils import reward_utils
 from metaworld.types import InitConfigDict
 
 
-class PandaButtonPressTopdownEnvV2(PandaEnv):
+class PandaHandlePressEnvV2(PandaEnv):
+    TARGET_RADIUS: float = 0.02
+
     def __init__(
         self,
         render_mode: RenderMode | None = None,
@@ -22,9 +22,11 @@ class PandaButtonPressTopdownEnvV2(PandaEnv):
         camera_id: int | None = None,
     ) -> None:
         hand_low = (-0.5, 0.40, 0.05)
-        hand_high = (0.5, 1, 0.5)
-        obj_low = (-0.1, 0.8, 0.115)
-        obj_high = (0.1, 0.9, 0.115)
+        hand_high = (0.5, 1.0, 0.5)
+        obj_low = (-0.1, 0.8, -0.001)
+        obj_high = (0.1, 0.9, 0.001)
+        goal_low = (-0.1, 0.55, 0.04)
+        goal_high = (0.1, 0.70, 0.08)
 
         super().__init__(
             hand_low=hand_low,
@@ -33,16 +35,16 @@ class PandaButtonPressTopdownEnvV2(PandaEnv):
             camera_name=camera_name,
             camera_id=camera_id,
         )
+
         self.init_config: InitConfigDict = {
-            "obj_init_pos": np.array([0, 0.8, 0.115], dtype=np.float32),
-            "hand_init_pos": np.array([0, 0.4, 0.2], dtype=np.float32),
+            "obj_init_pos": np.array([0, 0.9, 0.0]),
+            "hand_init_pos": np.array(
+                (0, 0.6, 0.2),
+            ),
         }
-        self.goal = np.array([0, 0.88, 0.1])
+        self.goal = np.array([0, 0.8, 0.14])
         self.obj_init_pos = self.init_config["obj_init_pos"]
         self.hand_init_pos = self.init_config["hand_init_pos"]
-
-        goal_low = self.hand_low
-        goal_high = self.hand_high
 
         self._random_reset_space = Box(
             np.array(obj_low), np.array(obj_high), dtype=np.float64
@@ -51,7 +53,7 @@ class PandaButtonPressTopdownEnvV2(PandaEnv):
 
     @property
     def model_name(self) -> str:
-        return full_v2_path_for("panda/panda_button_press_topdown.xml")
+        return full_v2_path_for("panda/panda_handle_press.xml")
 
     @PandaEnv._Decorators.assert_task_is_set
     def evaluate_state(
@@ -60,18 +62,19 @@ class PandaButtonPressTopdownEnvV2(PandaEnv):
         (
             reward,
             tcp_to_obj,
-            tcp_open,
-            obj_to_target,
-            near_button,
-            button_pressed,
+            _,
+            target_to_obj,
+            object_grasped,
+            in_place,
         ) = self.compute_reward(action, obs)
+
         info = {
-            "success": float(obj_to_target <= 0.024),
+            "success": float(target_to_obj <= self.TARGET_RADIUS),
             "near_object": float(tcp_to_obj <= 0.05),
-            "grasp_success": float(tcp_open > 0),
-            "grasp_reward": near_button,
-            "in_place_reward": button_pressed,
-            "obj_to_target": obj_to_target,
+            "grasp_success": 1.0,
+            "grasp_reward": object_grasped,
+            "in_place_reward": in_place,
+            "obj_to_target": target_to_obj,
             "unscaled_reward": reward,
         }
 
@@ -81,14 +84,11 @@ class PandaButtonPressTopdownEnvV2(PandaEnv):
     def _target_site_config(self) -> list[tuple[str, npt.NDArray[Any]]]:
         return []
 
-    def _get_id_main_object(self) -> int:
-        return self.model.geom_name2id("btnGeom")
-
     def _get_pos_objects(self) -> npt.NDArray[Any]:
-        return self.get_body_com("button") + np.array([0.0, 0.0, 0.193])
+        return self._get_site_pos("handleStart")
 
     def _get_quat_objects(self) -> npt.NDArray[Any]:
-        return self.data.body("button").xquat
+        return np.zeros(4)
 
     def _set_obj_xyz(self, pos: npt.NDArray[Any]) -> None:
         qpos = self.data.qpos.flat.copy()
@@ -99,47 +99,55 @@ class PandaButtonPressTopdownEnvV2(PandaEnv):
 
     def reset_model(self) -> npt.NDArray[np.float64]:
         self._reset_hand()
-        goal_pos = self._get_state_rand_vec()
-        self.obj_init_pos = goal_pos
-        self.model.body("box").pos = self.obj_init_pos
-        mujoco.mj_forward(self.model, self.data)
-        self._target_pos = self._get_site_pos("hole")
 
-        self._obj_to_target_init = abs(
-            self._target_pos[2] - self._get_site_pos("buttonStart")[2]
+        self.obj_init_pos = self._get_state_rand_vec()
+        self.model.body("box").pos = self.obj_init_pos
+        self._set_obj_xyz(np.array(-0.001))
+        self._target_pos = self._get_site_pos("goalPress")
+        self.maxDist = np.abs(
+            self.data.site("handleStart").xpos[-1] - self._target_pos[-1]
         )
+        self.target_reward = 1000 * self.maxDist + 1000 * 2
+        self._handle_init_pos = self._get_pos_objects()
+
         return self._get_obs()
 
     def compute_reward(
-        self, action: npt.NDArray[Any], obs: npt.NDArray[np.float64]
+        self, actions: npt.NDArray[Any], obs: npt.NDArray[np.float64]
     ) -> tuple[float, float, float, float, float, float]:
         assert (
             self._target_pos is not None
         ), "`reset_model()` must be called before `compute_reward()`."
-        del action
-        obj = obs[4:7]
+        del actions
+        obj = self._get_pos_objects()
         tcp = self.tcp_center
+        target = self._target_pos.copy()
 
+        target_to_obj = obj[2] - target[2]
+        target_to_obj = np.linalg.norm(target_to_obj)
+        target_to_obj_init = self._handle_init_pos[2] - target[2]
+        target_to_obj_init = np.linalg.norm(target_to_obj_init)
+
+        in_place = reward_utils.tolerance(
+            target_to_obj,
+            bounds=(0, self.TARGET_RADIUS),
+            margin=abs(target_to_obj_init - self.TARGET_RADIUS),
+            sigmoid="long_tail",
+        )
+
+        handle_radius = 0.02
         tcp_to_obj = float(np.linalg.norm(obj - tcp))
-        tcp_to_obj_init = float(np.linalg.norm(obj - self.init_tcp))
-        obj_to_target = abs(self._target_pos[2] - obj[2])
-
-        tcp_closed = 1 - obs[3]
-        near_button = reward_utils.tolerance(
+        tcp_to_obj_init = np.linalg.norm(self._handle_init_pos - self.init_tcp)
+        reach = reward_utils.tolerance(
             tcp_to_obj,
-            bounds=(0, 0.01),
-            margin=tcp_to_obj_init,
+            bounds=(0, handle_radius),
+            margin=abs(tcp_to_obj_init - handle_radius),
             sigmoid="long_tail",
         )
-        button_pressed = reward_utils.tolerance(
-            obj_to_target,
-            bounds=(0, 0.005),
-            margin=self._obj_to_target_init,
-            sigmoid="long_tail",
-        )
+        tcp_opened = 0
+        object_grasped = reach
 
-        reward = 5 * reward_utils.hamacher_product(tcp_closed, near_button)
-        if tcp_to_obj <= 0.03:
-            reward += 5 * button_pressed
-
-        return (reward, tcp_to_obj, obs[3], obj_to_target, near_button, button_pressed)
+        reward = reward_utils.hamacher_product(reach, in_place)
+        reward = 1.0 if target_to_obj <= self.TARGET_RADIUS else reward
+        reward *= 10
+        return (reward, tcp_to_obj, tcp_opened, target_to_obj, object_grasped, in_place)

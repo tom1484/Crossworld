@@ -8,13 +8,12 @@ import numpy.typing as npt
 from gymnasium.spaces import Box
 
 from metaworld.envs.asset_path_utils import full_v2_path_for
-# from metaworld.envs.mujoco.panda._panda_env import RenderMode, PandaEnv
 from metaworld.envs.mujoco.panda.panda_env import RenderMode, PandaEnv
 from metaworld.envs.mujoco.utils import reward_utils
 from metaworld.types import InitConfigDict
 
 
-class PandaButtonPressTopdownEnvV2(PandaEnv):
+class PandaButtonPressTopdownWallEnvV2(PandaEnv):
     def __init__(
         self,
         render_mode: RenderMode | None = None,
@@ -33,6 +32,7 @@ class PandaButtonPressTopdownEnvV2(PandaEnv):
             camera_name=camera_name,
             camera_id=camera_id,
         )
+
         self.init_config: InitConfigDict = {
             "obj_init_pos": np.array([0, 0.8, 0.115], dtype=np.float32),
             "hand_init_pos": np.array([0, 0.4, 0.2], dtype=np.float32),
@@ -51,7 +51,7 @@ class PandaButtonPressTopdownEnvV2(PandaEnv):
 
     @property
     def model_name(self) -> str:
-        return full_v2_path_for("panda/panda_button_press_topdown.xml")
+        return full_v2_path_for("panda/panda_button_press_topdown_wall.xml")
 
     @PandaEnv._Decorators.assert_task_is_set
     def evaluate_state(
@@ -65,6 +65,7 @@ class PandaButtonPressTopdownEnvV2(PandaEnv):
             near_button,
             button_pressed,
         ) = self.compute_reward(action, obs)
+
         info = {
             "success": float(obj_to_target <= 0.024),
             "near_object": float(tcp_to_obj <= 0.05),
@@ -99,15 +100,18 @@ class PandaButtonPressTopdownEnvV2(PandaEnv):
 
     def reset_model(self) -> npt.NDArray[np.float64]:
         self._reset_hand()
+        self._target_pos = self.goal.copy()
+
         goal_pos = self._get_state_rand_vec()
         self.obj_init_pos = goal_pos
         self.model.body("box").pos = self.obj_init_pos
         mujoco.mj_forward(self.model, self.data)
-        self._target_pos = self._get_site_pos("hole")
 
+        self._target_pos = self._get_site_pos("hole")
         self._obj_to_target_init = abs(
             self._target_pos[2] - self._get_site_pos("buttonStart")[2]
         )
+
         return self._get_obs()
 
     def compute_reward(

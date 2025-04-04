@@ -103,7 +103,8 @@ class PandaEnv(ArmEnv):
 
     def get_endeff_pos(self) -> npt.NDArray[Any]:
         """Returns the position of the end effector."""
-        return self.data.body("hand").xpos
+        # return self.data.body("hand").xpos
+        return self._get_site_pos("endeff")
 
     def touching_object(self, object_geom_id: int) -> bool:
         """Determines whether the gripper is touching the object with given id.
@@ -251,8 +252,8 @@ class PandaEnv(ArmEnv):
         if high_density and medium_density:
             raise ValueError("Can only be either high_density or medium_density")
         # MARK: Left-right gripper information for caging reward----------------
-        left_pad = self.get_body_com("leftpad")
-        right_pad = self.get_body_com("rightpad")
+        left_pad = self.left_pad
+        right_pad = self.right_pad
 
         # get current positions of left and right pads (Y axis)
         pad_y_lr = np.hstack((left_pad[1], right_pad[1]))
@@ -388,8 +389,8 @@ class PandaEnv(ArmEnv):
             Whether the gripper is touching the object
         """
 
-        leftpad_geom_id = self.data.geom("leftpad_geom").id
-        rightpad_geom_id = self.data.geom("rightpad_geom").id
+        leftpad_geom_id = self.data.geom("finger1_pad_collision").id
+        rightpad_geom_id = self.data.geom("finger2_pad_collision").id
 
         leftpad_object_contacts = [
             x
