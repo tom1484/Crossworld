@@ -9,7 +9,7 @@ import mujoco
 import numpy as np
 import numpy.typing as npt
 from gymnasium.envs.mujoco import MujocoEnv as mjenv_gym
-from gymnasium.spaces import Box, Discrete, Space
+from gymnasium.spaces import Box, Discrete
 from gymnasium.utils import seeding
 from gymnasium.utils.ezpickle import EzPickle
 from typing_extensions import TypeAlias
@@ -100,23 +100,24 @@ class MocapBase(mjenv_gym, ABC):
         )
         self.set_env_state(state["mocap"])
 
-    def reset_mocap_welds(self) -> None:
-        """Resets the mocap welds that we use for actuation."""
-        if self.model.nmocap > 0 and self.model.eq_data is not None:
-            for i in range(self.model.eq_data.shape[0]):
-                if self.model.eq_type[i] == mujoco.mjtEq.mjEQ_WELD:
-                    self.model.eq_data[i] = np.array(
-                        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 5.0]
-                    )
-
     ##############################
     # START Arm specific methods #
     ##############################
 
+    @abstractmethod
+    def reset_mocap_welds(self) -> None:
+        """Resets the mocap welds that we use for actuation."""
+        # if self.model.nmocap > 0 and self.model.eq_data is not None:
+        #     for i in range(self.model.eq_data.shape[0]):
+        #         if self.model.eq_type[i] == mujoco.mjtEq.mjEQ_WELD:
+        #             self.model.eq_data[i] = np.array(
+        #                 [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 5.0]
+        #             )
+
     @property
     @abstractmethod
     def model_name(self) -> str:
-        pass
+        """The name of the model to load."""
 
     @property
     @abstractmethod
@@ -126,12 +127,10 @@ class MocapBase(mjenv_gym, ABC):
         Returns:
             3-element position.
         """
-        pass
 
     @abstractmethod
     def get_endeff_pos(self) -> npt.NDArray[Any]:
         """Returns the position of the end effector."""
-        pass
 
     @property
     @abstractmethod
@@ -141,7 +140,6 @@ class MocapBase(mjenv_gym, ABC):
         Returns:
             gym.spaces.Box: The observation space for the arm
         """
-        pass
 
 
 class ArmEnv(MocapBase, EzPickle):
@@ -512,7 +510,7 @@ class ArmEnv(MocapBase, EzPickle):
         obs = obs.astype(np.float64)
         return obs, info
 
-    def _reset_hand(self, steps: int = 50) -> None:
+    def _reset_hand(self, steps: int = 1) -> None:
         """Resets the hand position.
 
         Args:
@@ -587,7 +585,6 @@ class ArmEnv(MocapBase, EzPickle):
         Returns:
             the reward value
         """
-        pass
 
     @abstractmethod
     def set_xyz_action(self, action):
@@ -596,12 +593,14 @@ class ArmEnv(MocapBase, EzPickle):
         Args:
             action (np.ndarray): The action to apply
         """
-        pass
 
     @property
     @abstractmethod
-    def gripper_distance_apart(self):
-        pass
+    def gripper_distance_apart(self) -> float:
+        """Gets the distance between the gripper pads.
+        Returns:
+            The distance between the gripper pads
+        """
 
     @abstractmethod
     def touching_object(self, object_geom_id: int) -> bool:
@@ -614,7 +613,6 @@ class ArmEnv(MocapBase, EzPickle):
             (bool): whether the gripper is touching the object
 
         """
-        pass
 
     ##############################
     # MARK: Env specific methods #
@@ -666,7 +664,6 @@ class ArmEnv(MocapBase, EzPickle):
         """
         # Throw error rather than making this an @abc.abstractmethod so that
         # V1 environments don't have to implement it
-        pass
 
     @abstractmethod
     def _get_pos_objects(self) -> npt.NDArray[Any]:
@@ -677,7 +674,6 @@ class ArmEnv(MocapBase, EzPickle):
         """
         # Throw error rather than making this an @abc.abstractmethod so that
         # V1 environments don't have to implement it
-        pass
 
     @abstractmethod
     def _get_quat_objects(self) -> npt.NDArray[Any]:
@@ -688,4 +684,3 @@ class ArmEnv(MocapBase, EzPickle):
         """
         # Throw error rather than making this an @abc.abstractmethod so that
         # V1 environments don't have to implement it
-        pass

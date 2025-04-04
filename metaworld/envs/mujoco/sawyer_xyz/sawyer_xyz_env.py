@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Literal
 
+import mujoco
 import numpy as np
 import numpy.typing as npt
 from gymnasium.spaces import Box
@@ -64,6 +65,15 @@ class SawyerXYZEnv(ArmEnv):
             np.array([+1, +1, +1, +1]),
             dtype=np.float32,
         )
+
+    def reset_mocap_welds(self) -> None:
+        """Resets the mocap welds that we use for actuation."""
+        if self.model.nmocap > 0 and self.model.eq_data is not None:
+            for i in range(self.model.eq_data.shape[0]):
+                if self.model.eq_type[i] == mujoco.mjtEq.mjEQ_WELD:
+                    self.model.eq_data[i] = np.array(
+                        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0, 0.0, 5.0]
+                    )
 
     @property
     def tcp_center(self) -> npt.NDArray[Any]:
@@ -342,10 +352,10 @@ class SawyerXYZEnv(ArmEnv):
     @property
     def gripper_distance_apart(self):
         finger_right, finger_left = (
-            self.data.body("rightclaw"),
-            self.data.body("leftclaw"),
+            self.get_body_com("rightclaw"),
+            self.get_body_com("leftclaw"),
         )
-        gripper_distance_apart = np.linalg.norm(finger_right.xpos - finger_left.xpos)
+        gripper_distance_apart = np.linalg.norm(finger_right - finger_left)
         gripper_distance_apart = np.clip(gripper_distance_apart / 0.1, 0.0, 1.0)
         return gripper_distance_apart
 
