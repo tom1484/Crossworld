@@ -153,7 +153,10 @@ def list_tasks_for_env(benchmark: BenchmarkType, env_name: str) -> None:
 
 
 def save_render_frames(
-    output_dir: str, frames: List[np.ndarray], prefix: str = "frame", save_raw: bool = False
+    output_dir: str,
+    frames: List[np.ndarray],
+    prefix: str = "frame",
+    save_raw: bool = False,
 ):
     """Save rendered frames as images and combine them into a video.
 
@@ -164,7 +167,7 @@ def save_render_frames(
     """
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    
+
     raw_dir: str = None
     if save_raw:
         raw_dir = os.path.join(output_dir, "raw")
@@ -254,14 +257,17 @@ def render_frame(env: EnvType, frames: List[np.ndarray]) -> None:
 # Add common PyGame setup functions
 def init_pygame_common(window_size: Tuple[int, int]) -> Tuple[Any, Any]:
     import pygame
+
     pygame.init()
     screen = pygame.display.set_mode(window_size)
     pygame.display.set_caption("MetaWorld Progress")
     clock = pygame.time.Clock()
     return screen, clock
 
+
 def process_common_pygame_events(clock: Any) -> bool:
     import pygame
+
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
@@ -283,10 +289,10 @@ def process_common_pygame_events(clock: Any) -> bool:
 def record_trajectory(
     env: EnvType,
     policy: Optional[PolicyType] = None,
-    max_steps: int = 500,
+    max_steps: Optional[int] = None,
     output_dir: Optional[str] = None,
     delay: float = 0.0,
-    window_size: Tuple[int, int] = (640, 480)
+    window_size: Tuple[int, int] = (640, 480),
 ) -> Dict[str, Any]:
     """
     Execute an environment trajectory using the provided policy or random actions.
@@ -301,6 +307,9 @@ def record_trajectory(
     Returns:
         Dictionary containing trajectory data
     """
+    # FIX: I really don't know why this is needed
+    import numpy as np
+
     obs: np.ndarray
     info: Dict
     obs, info = env.reset()
@@ -324,12 +333,13 @@ def record_trajectory(
     # Initialize minimal PyGame display if available
     if PYGAME_AVAILABLE:
         screen, clock = init_pygame_common(window_size)
-    
-    while count < max_steps and not done:
+
+    while (max_steps is None or count < max_steps) and not done:
         if policy:
             action = policy.get_action(obs)
         else:
-            action = env.action_space.sample()
+            # zero action
+            action = np.zeros(env.action_space.shape[0], dtype=np.float32)
 
         trajectory_data["observations"].append(obs)
         trajectory_data["actions"].append(action)
@@ -355,7 +365,12 @@ def record_trajectory(
                     # Convert image for PyGame display
                     import pygame
                     import numpy as np
-                    arr = np.transpose(rgb_array, (1, 0, 2)) if len(rgb_array.shape) == 3 else rgb_array
+
+                    arr = (
+                        np.transpose(rgb_array, (1, 0, 2))
+                        if len(rgb_array.shape) == 3
+                        else rgb_array
+                    )
                     surface = pygame.surfarray.make_surface(arr)
                     surface = pygame.transform.scale(surface, window_size)
                     screen.blit(surface, (0, 0))
@@ -382,6 +397,7 @@ def record_trajectory(
 
     if PYGAME_AVAILABLE:
         import pygame
+
         pygame.quit()
 
     # Save rendered frames into a video if output_dir is provided
@@ -718,6 +734,11 @@ def main() -> None:
         "--list-envs", action="store_true", help="List available environments"
     )
     parser.add_argument(
+        "--render-test",
+        action="store_true",
+        help="Render the environment",
+    )
+    parser.add_argument(
         "--policy-test",
         action="store_true",
         help="Test with appropriate scripted policy if available",
@@ -761,6 +782,12 @@ def main() -> None:
         default="frontview",
         choices=["corner", "corner2", "corner3", "frontview"],
         help="Name of camera for rendering (default: frontview)",
+    )
+    parser.add_argument(
+        "--delay",
+        type=float,
+        default=0.0,
+        help="Delay between steps in seconds (default: 0.05)",
     )
 
     args = parser.parse_args()
@@ -883,10 +910,11 @@ def main() -> None:
             env_cls: Type[EnvType] = benchmark.train_classes[env_name]
             # Use 'rgb_array' render mode for headless operation
             env: EnvType = env_cls(
-                render_mode="rgb_array", camera_name=args.camera_name,
+                render_mode="rgb_array",
+                camera_name=args.camera_name,
             )
-            env.done_on_success=args.policy_test
-            env.ignore_termination = args.pygame_control
+            env.done_on_success = args.policy_test
+            env.ignore_termination = args.pygame_control or args.render_test
 
             # Find matching tasks
             matching_tasks: List[Task] = [
@@ -958,12 +986,20 @@ def main() -> None:
                     output_dir=output_dir,
                     window_size=window_size,
                 )
-        else:
+        elif args.policy_test:
             print(f"Running {'policy' if policy else 'random'} for {env_name}")
             trajectory: Dict[str, Any] = record_trajectory(
-                env, policy=policy, max_steps=args.steps, output_dir=output_dir
+                env,
+                policy=policy,
+                max_steps=args.steps,
+                output_dir=output_dir,
             )
             print(f"Trajectory completed. Success: {trajectory['success']}")
+        elif args.render_test:
+            print(f"Rendering {env_name} for {args.steps} steps")
+            trajectory: Dict[str, Any] = record_trajectory(env, delay=args.delay)
+            print(f"Trajectory completed. Success: {trajectory['success']}")
+
     except KeyboardInterrupt:
         print("\nInterrupted by user")
     except Exception as e:
