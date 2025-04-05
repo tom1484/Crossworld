@@ -188,9 +188,6 @@ PANDA_ENVIRONMENTS = OrderedDict(
     )
 )
 
-# ... Other envs
-
-
 ARM_NAMES = ["sawyer", "panda"]
 
 ARM_ENV_CLS_MAPS = OrderedDict(
