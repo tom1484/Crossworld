@@ -19,6 +19,7 @@ from metaworld.envs.mujoco.arm_env import ArmEnv
 # Utils
 
 EnvDict: TypeAlias = "Typing_OrderedDict[str, type[ArmEnv]]"
+ArmEnvDict: TypeAlias = "Typing_OrderedDict[str, type[EnvDict]]"
 TrainTestEnvDict: TypeAlias = "Typing_OrderedDict[Literal['train', 'test'], EnvDict]"
 EnvArgsKwargsDict: TypeAlias = (
     "Dict[str, Dict[Literal['args', 'kwargs'], Union[List, Dict]]]"
@@ -258,6 +259,101 @@ def _get_args_kwargs(all_envs: Sequence[str], env_subset: EnvDict) -> EnvArgsKwa
         key: dict(args=[], kwargs={"task_id": list(all_envs).index(key)})
         for key, _ in env_subset.items()
     }
+
+
+def _create_hidden_goal_envs(all_envs: ArmEnvDict) -> ArmEnvDict:
+    """Create versions of the environments with the goal hidden.
+
+    Args:
+        all_envs: The full list of envs in the benchmark.
+
+    Returns:
+        An `EnvDict` where the classes have been modified to hide the goal.
+    """
+    hidden_goal_envs = {}
+    for arm_name, arm_envs in all_envs.items():
+        hidden_goal_envs[arm_name] = {}
+        for env_name, env_cls in arm_envs.items():
+            d = {}
+
+            def initialize(env, seed=None):
+                if seed is not None:
+                    st0 = np.random.get_state()
+                    np.random.seed(seed)
+                super(type(env), env).__init__()
+                env._partially_observable = True
+                env._freeze_rand_vec = False
+                env._set_task_called = True
+                env.reset()
+                env._freeze_rand_vec = True
+                if seed is not None:
+                    env.seed(seed=seed)
+                    np.random.set_state(st0)
+
+            d["__init__"] = initialize
+            hg_env_name = re.sub(
+                r"(^|[-])\s*([a-zA-Z])", lambda p: p.group(0).upper(), env_name
+            )
+            hg_env_name = hg_env_name.replace("-", "")
+            hg_env_key = f"{env_name}-goal-hidden"
+            hg_env_name = f"{hg_env_name}GoalHidden"
+            HiddenGoalEnvCls = type(hg_env_name, (env_cls,), d)
+            hidden_goal_envs[arm_name][hg_env_key] = HiddenGoalEnvCls
+
+        hidden_goal_envs[arm_name] = OrderedDict(hidden_goal_envs[arm_name])
+
+    return OrderedDict(hidden_goal_envs)
+
+
+def _create_observable_goal_envs(all_envs: ArmEnvDict) -> ArmEnvDict:
+    """Create versions of the environments with the goal observable.
+
+    Args:
+        all_envs: The full list of envs in the benchmark.
+
+    Returns:
+        An `EnvDict` where the classes have been modified to make the goal observable.
+    """
+    observable_goal_envs = {}
+    for arm_name, arm_envs in all_envs.items():
+        observable_goal_envs[arm_name] = {}
+        for env_name, env_cls in arm_envs.items():
+            d = {}
+
+            def initialize(env, seed=None, render_mode=None):
+                if seed is not None:
+                    st0 = np.random.get_state()
+                    np.random.seed(seed)
+                super(type(env), env).__init__()
+
+                env._partially_observable = False
+                env._freeze_rand_vec = False
+                env._set_task_called = True
+                env.render_mode = render_mode
+                env.reset()
+                env._freeze_rand_vec = True
+                if seed is not None:
+                    env.seed(seed)
+                    np.random.set_state(st0)
+
+            d["__init__"] = initialize
+            og_env_name = re.sub(
+                r"(^|[-])\s*([a-zA-Z])", lambda p: p.group(0).upper(), env_name
+            )
+            og_env_name = og_env_name.replace("-", "")
+
+            og_env_key = f"{env_name}-goal-observable"
+            og_env_name = f"{og_env_name}GoalObservable"
+            ObservableGoalEnvCls = type(og_env_name, (env_cls,), d)
+            observable_goal_envs[arm_name][og_env_key] = ObservableGoalEnvCls
+
+        observable_goal_envs[arm_name] = OrderedDict(observable_goal_envs[arm_name])
+
+    return OrderedDict(observable_goal_envs)
+
+
+ALL_V2_ENVIRONMENTS_GOAL_HIDDEN = _create_hidden_goal_envs(ARM_ENV_CLS_MAPS)
+ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE = _create_observable_goal_envs(ARM_ENV_CLS_MAPS)
 
 
 # MT Dicts
