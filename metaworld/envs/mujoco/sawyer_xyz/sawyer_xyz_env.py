@@ -117,11 +117,11 @@ class SawyerXYZEnv(ArmEnv):
 
     @property
     def left_pad(self):
-        return self.left_pad
+        return self.get_body_com("leftpad")
 
     @property
     def right_pad(self):
-        return self.right_pad
+        return self.get_body_com("rightpad")
 
     def get_endeff_pos(self) -> npt.NDArray[Any]:
         """Returns the position of the end effector."""
