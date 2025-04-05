@@ -780,7 +780,7 @@ def main() -> None:
         "--camera-name",
         type=str,
         default="frontview",
-        choices=["corner", "corner2", "corner3", "frontview"],
+        choices=["corner", "corner2", "corner3", "frontview", "leftview"],
         help="Name of camera for rendering (default: frontview)",
     )
     parser.add_argument(
@@ -788,6 +788,11 @@ def main() -> None:
         type=float,
         default=0.0,
         help="Delay between steps in seconds (default: 0.05)",
+    )
+    parser.add_argument(
+        "--save",
+        action="store_true",
+        help="Save rendered frames as images and combine into a video",
     )
 
     args = parser.parse_args()
@@ -805,18 +810,20 @@ def main() -> None:
     np.random.seed(args.seed)
 
     # Set up output directory if rendering is enabled
-    output_dir: Optional[str] = args.output_dir
-    if output_dir is None:
-        timestamp: str = datetime.now().strftime("%Y%m%d_%H%M%S")
-        output_dir = f"./render_output/{timestamp}"
+    output_dir: Optional[str] = None
+    if args.save:
+        output_dir = args.output_dir
+        if output_dir is None:
+            timestamp: str = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_dir = f"./render_output/{args.arm_name}_{args.env_name}/{timestamp}"
 
-    if not os.path.exists(output_dir):
-        try:
-            os.makedirs(output_dir)
-            print(f"Created output directory: {output_dir}")
-        except Exception as e:
-            print(f"Warning: Could not create output directory: {e}")
-            output_dir = None
+        if not os.path.exists(output_dir):
+            try:
+                os.makedirs(output_dir)
+                print(f"Created output directory: {output_dir}")
+            except Exception as e:
+                print(f"Warning: Could not create output directory: {e}")
+                output_dir = None
 
     # Initialize benchmark based on user's choice
     benchmark: Optional[BenchmarkType] = None
