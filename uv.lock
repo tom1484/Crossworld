@@ -723,7 +723,7 @@ requires-dist = [
     { name = "ipdb", marker = "extra == 'testing'" },
     { name = "isort", marker = "extra == 'dev'" },
     { name = "memory-profiler", marker = "extra == 'testing'" },
-    { name = "mujoco", specifier = ">=3.0.0" },
+    { name = "mujoco", specifier = ">=3.2.3" },
     { name = "mypy", marker = "extra == 'dev'" },
     { name = "numpy", specifier = ">=1.18" },
     { name = "opencv-python" },
