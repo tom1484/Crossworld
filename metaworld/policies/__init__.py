@@ -221,6 +221,7 @@ from metaworld.policies.sawyer.sawyer_window_open_v2_policy import (
 )
 
 __all__ = [
+    "ALL_POLICIES",
     "SawyerAssemblyV1Policy",
     "SawyerAssemblyV2Policy",
     "SawyerBasketballV1Policy",

@@ -8,9 +8,12 @@ from metaworld.envs.mujoco.env_dict import (
     ARM_ENV_CLS_MAPS as ALL_ENVS,
 )
 
+from metaworld.envs.mujoco.arm_env import ArmEnv
+
 __all__ = [
     "ALL_ARMS",
     "ALL_ENVS",
     "ALL_V2_ENVIRONMENTS_GOAL_HIDDEN",
     "ALL_V2_ENVIRONMENTS_GOAL_OBSERVABLE",
+    "ArmEnv",
 ]
