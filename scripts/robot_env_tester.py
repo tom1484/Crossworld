@@ -290,6 +290,7 @@ def record_trajectory(
     env: EnvType,
     policy: Optional[PolicyType] = None,
     max_steps: Optional[int] = None,
+    loop: bool = False,
     output_dir: Optional[str] = None,
     delay: float = 0.0,
     window_size: Tuple[int, int] = (640, 480),
@@ -312,11 +313,19 @@ def record_trajectory(
 
     obs: np.ndarray
     info: Dict
-    obs, info = env.reset()
+    done: bool
+    count: int
+    success: bool
 
-    done: bool = False
-    count: int = 0
-    success: bool = False
+    def reset():
+        nonlocal obs, info, done, count, success
+
+        obs, info = env.reset()
+        done = False
+        count = 0
+        success = False
+
+    reset()
 
     # Save initial render
     rendered_frames: List[np.ndarray] = []
@@ -334,7 +343,10 @@ def record_trajectory(
     if PYGAME_AVAILABLE:
         screen, clock = init_pygame_common(window_size)
 
-    while (max_steps is None or count < max_steps) and not done:
+    while loop or (max_steps is None or count < max_steps):
+        if done:
+            reset()
+
         if policy:
             action = policy.get_action(obs)
         else:
@@ -401,7 +413,7 @@ def record_trajectory(
         pygame.quit()
 
     # Save rendered frames into a video if output_dir is provided
-    if output_dir and rendered_frames:
+    if not loop and output_dir and rendered_frames:
         save_render_frames(output_dir, rendered_frames, prefix="frame")
         print(f"Rendered frames saved to {output_dir}")
 
@@ -780,7 +792,7 @@ def main() -> None:
         "--camera-name",
         type=str,
         default="frontview",
-        choices=["corner", "corner2", "corner3", "frontview", "leftview"],
+        choices=["corner", "corner2", "corner3", "frontview", "leftview", "rightview", "topview"],
         help="Name of camera for rendering (default: frontview)",
     )
     parser.add_argument(
@@ -793,6 +805,11 @@ def main() -> None:
         "--save",
         action="store_true",
         help="Save rendered frames as images and combine into a video",
+    )
+    parser.add_argument(
+        "--loop",
+        action="store_true",
+        help="Loop the environment indefinitely until ESC is pressed",
     )
 
     args = parser.parse_args()
@@ -999,6 +1016,7 @@ def main() -> None:
                 env,
                 policy=policy,
                 max_steps=args.steps,
+                loop=args.loop,
                 output_dir=output_dir,
             )
             print(f"Trajectory completed. Success: {trajectory['success']}")
