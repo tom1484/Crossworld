@@ -37,8 +37,12 @@ class PandaShelfPlaceV2Policy(Policy):
     @staticmethod
     def _desired_pos(o_d: dict[str, npt.NDArray[np.float64]]) -> npt.NDArray[Any]:
         pos_curr = o_d["hand_pos"]
-        pos_block = o_d["block_pos"] + np.array([-0.005, 0.0, 0.015])
+        pos_block = o_d["block_pos"] 
         pos_shelf_x = o_d["shelf_x"]
+
+        block_offset = (pos_block[0] - pos_shelf_x) / 20.0
+
+        pos_block += np.array([block_offset, 0.0, 0.015])
         if np.linalg.norm(pos_curr[:2] - pos_block[:2]) > 0.04:
             # positioning over block
             return pos_block + np.array([0.0, 0.0, 0.3])
@@ -64,8 +68,8 @@ class PandaShelfPlaceV2Policy(Policy):
 
         if (
             np.linalg.norm(pos_curr[:2] - pos_block[:2]) > 0.04
-            or abs(pos_curr[2] - pos_block[2]) > 0.15
+            or abs(pos_curr[2] - pos_block[2]) > 0.2
         ):
             return -1.0
         else:
-            return 0.7
+            return 0.4
