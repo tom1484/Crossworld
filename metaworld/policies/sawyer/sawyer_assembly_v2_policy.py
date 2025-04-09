@@ -35,7 +35,7 @@ class SawyerAssemblyV2Policy(Policy):
     def _desired_pos(o_d: dict[str, npt.NDArray[np.float64]]) -> npt.NDArray[Any]:
         pos_curr = o_d["hand_pos"]
         pos_wrench = o_d["wrench_pos"] + np.array([-0.02, 0.0, 0.0])
-        pos_peg = o_d["peg_pos"] + np.array([0.12, 0.0, 0.14])
+        pos_peg = o_d["peg_pos"] + np.array([0.11, 0.0, 0.14])
 
         # If XY error is greater than 0.02, place end effector above the wrench
         if np.linalg.norm(pos_curr[:2] - pos_wrench[:2]) > 0.02:
@@ -44,8 +44,8 @@ class SawyerAssemblyV2Policy(Policy):
         elif np.linalg.norm(pos_curr[:2] - pos_peg[:2]) <= 0.02:
             return pos_peg + np.array([0.0, 0.0, -0.2])
         # Once XY error is low enough, drop end effector down on top of wrench
-        elif abs(pos_curr[2] - pos_wrench[2]) > 0.05:
-            return pos_wrench + np.array([0.0, 0.0, 0.03])
+        elif abs(pos_curr[2] - pos_wrench[2]) > 0.04:
+            return pos_wrench + np.array([0.0, 0.0, 0.02])
         # If not at the same Z height as the goal, move up to that plane
         elif abs(pos_curr[2] - pos_peg[2]) > 0.04:
             return np.array([pos_curr[0], pos_curr[1], pos_peg[2]])
