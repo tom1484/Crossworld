@@ -35,14 +35,14 @@ class PandaDoorOpenV2Policy(Policy):
     @staticmethod
     def _desired_pos(o_d: dict[str, npt.NDArray[np.float64]]) -> npt.NDArray[Any]:
         pos_curr = o_d["hand_pos"]
-        pos_door = o_d["door_pos"] + np.array([-0.05, 0.0, 0.04])
+        pos_door = o_d["door_pos"] + np.array([0.01, -0.025, 0.04])
 
         # align end effector's Z axis with door handle's Z axis
         if np.linalg.norm(pos_curr[:2] - pos_door[:2]) > 0.12:
-            return pos_door + np.array([0.06, -0.03, 0.2])
+            return pos_door + np.array([0.0, 0.0, 0.3])
         # drop down on front edge of door handle
         elif abs(pos_curr[2] - pos_door[2]) > 0.04:
-            return pos_door + np.array([0.06, -0.03, 0.0])
+            return pos_door
         # push from front edge toward door handle's centroid
         else:
-            return pos_door + np.array([0.0, -0.02, 0.0])
+            return pos_door + np.array([-0.06, -0.02, 0.0])
