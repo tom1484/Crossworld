@@ -201,32 +201,37 @@ def save_render_frames(
                         "WARNING: Neither PIL nor OpenCV available. Cannot save rendered frames."
                     )
 
-    # Combine all frames into a video
+    # Combine all frames into a GIF
     try:
-        import cv2
+        from PIL import Image
 
         if not frames:
-            print("No frames to combine into video.")
+            print("No frames to combine into GIF.")
             return
 
-        height, width = frames[0].shape[:2]
-        video_filepath = os.path.join(output_dir, f"episode.mp4")
-        fourcc = cv2.VideoWriter_fourcc(*"mp4v")
-        fps = 30  # Frames per second
-        video_writer = cv2.VideoWriter(video_filepath, fourcc, fps, (width, height))
+        gif_filepath = os.path.join(output_dir, "episode.gif")
 
+        # Convert each frame (assumed to be in RGB format) into a PIL Image
+        pil_frames = []
         for frame in frames:
-            # Convert to BGR if needed
             if len(frame.shape) == 3 and frame.shape[2] == 3:
-                frame_bgr = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                pil_frame = Image.fromarray(frame)
             else:
-                frame_bgr = frame
-            video_writer.write(frame_bgr)
+                # For non-RGB frames, simply convert without mode change
+                pil_frame = Image.fromarray(frame)
+            pil_frames.append(pil_frame)
 
-        video_writer.release()
-        print(f"Video saved to {video_filepath}")
+        # Save as an animated GIF, duration is set to 100ms per frame
+        pil_frames[0].save(
+            gif_filepath,
+            save_all=True,
+            append_images=pil_frames[1:],
+            loop=0,
+            duration=100,
+        )
+        print(f"GIF saved to {gif_filepath}")
     except ImportError:
-        print("OpenCV not available, skipping video creation.")
+        print("PIL not available, skipping GIF creation.")
 
 
 def render_frame(env: EnvType, frames: List[np.ndarray]) -> None:
@@ -343,10 +348,10 @@ def record_trajectory(
     if PYGAME_AVAILABLE:
         screen, clock = init_pygame_common(window_size)
 
-    while loop or (max_steps is None or count < max_steps):
-        if done:
-            reset()
-
+    if loop:
+        max_steps = None
+    
+    while (max_steps is None or count < max_steps) and not done:
         if policy:
             action = policy.get_action(obs)
         else:
@@ -404,6 +409,9 @@ def record_trajectory(
         if delay > 0:
             time.sleep(delay)
         count += 1
+
+        if done and loop:
+            reset()
 
     trajectory_data["success"] = success
 
