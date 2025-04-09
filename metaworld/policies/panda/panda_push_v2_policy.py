@@ -36,7 +36,7 @@ class PandaPushV2Policy(Policy):
     @staticmethod
     def _desired_pos(o_d: dict[str, npt.NDArray[np.float64]]) -> npt.NDArray[Any]:
         pos_curr = o_d["hand_pos"]
-        pos_puck = o_d["puck_pos"] + np.array([-0.005, 0, 0])
+        pos_puck = o_d["puck_pos"]
         pos_goal = o_d["goal_pos"]
 
         # If error in the XY plane is greater than 0.02, place end effector above the puck

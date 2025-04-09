@@ -34,7 +34,7 @@ class PandaBasketballV2Policy(Policy):
     @staticmethod
     def _desired_pos(o_d: dict[str, npt.NDArray[np.float64]]) -> npt.NDArray[Any]:
         pos_curr = o_d["hand_pos"]
-        pos_ball = o_d["ball_pos"] + np.array([0.0, 0.0, 0.01])
+        pos_ball = o_d["ball_pos"] + np.array([0.0, 0.0, 0.03])
         # X is given by hoop_pos
         # Y varies between .85 and .9, so we take avg
         # Z is constant at .35
@@ -42,8 +42,8 @@ class PandaBasketballV2Policy(Policy):
 
         if np.linalg.norm(pos_curr[:2] - pos_ball[:2]) > 0.04:
             return pos_ball + np.array([0.0, 0.0, 0.3])
-        elif abs(pos_curr[2] - pos_ball[2]) > 0.025:
-            return pos_ball
+        elif abs(pos_curr[2] - pos_ball[2]) > 0.015:
+            return pos_ball + np.array([0.0, 0.0, -0.00])
         elif abs(pos_ball[2] - pos_hoop[2]) > 0.025:
             return np.array([pos_curr[0], pos_curr[1], pos_hoop[2]])
         else:

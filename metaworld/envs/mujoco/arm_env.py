@@ -523,12 +523,14 @@ class ArmEnv(MocapBase, EzPickle):
         truncate = truncate and not self.ignore_termination
         done = done and not self.ignore_termination
 
-        # Ensure reward is a float
+        # Ensure reward is primitive float
         if type(reward) is not float:
-            assert isinstance(reward, np.float32) or isinstance(
-                reward, np.float64
-            ), f"Reward should be float, got {type(reward)}"
-            reward = float(reward)
+            try:
+                reward = float(reward)
+            except TypeError:
+                raise TypeError(
+                    f"Cannot convert reward to float: {reward} of type {type(reward)}"
+                )
 
         return (
             np.array(self._last_stable_obs, dtype=np.float64),

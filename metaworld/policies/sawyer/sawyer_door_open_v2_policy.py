@@ -28,7 +28,7 @@ class SawyerDoorOpenV2Policy(Policy):
         action["delta_pos"] = move(
             o_d["hand_pos"], to_xyz=self._desired_pos(o_d), p=25.0
         )
-        action["grab_effort"] = 1.0
+        action["grab_effort"] = -1.0
 
         return action.array
 
@@ -40,10 +40,10 @@ class SawyerDoorOpenV2Policy(Policy):
 
         # align end effector's Z axis with door handle's Z axis
         if np.linalg.norm(pos_curr[:2] - pos_door[:2]) > 0.12:
-            return pos_door + np.array([0.06, 0.02, 0.2])
+            return pos_door + np.array([0.06, -0.02, 0.2])
         # drop down on front edge of door handle
         elif abs(pos_curr[2] - pos_door[2]) > 0.04:
-            return pos_door + np.array([0.06, 0.02, 0.0])
+            return pos_door + np.array([0.06, -0.02, 0.0])
         # push from front edge toward door handle's centroid
         else:
-            return pos_door
+            return pos_door + np.array([0.0, -0.01, 0.0])

@@ -34,8 +34,8 @@ class PandaHammerV2Policy(Policy):
     @staticmethod
     def _desired_pos(o_d: dict[str, npt.NDArray[np.float64]]) -> npt.NDArray[Any]:
         pos_curr = o_d["hand_pos"]
-        pos_puck = o_d["hammer_pos"] + np.array([-0.04, 0.0, -0.01])
-        pos_goal = np.array([0.24, 0.71, 0.11]) + np.array([-0.19, 0.0, 0.05])
+        pos_puck = o_d["hammer_pos"] + np.array([0.07, 0.0, -0.01])
+        pos_goal = np.array([0.24, 0.71, 0.11]) + np.array([-0.08, 0.0, 0.05])
 
         # If error in the XY plane is greater than 0.02, place end effector above the puck
         if np.linalg.norm(pos_curr[:2] - pos_puck[:2]) > 0.04:
@@ -53,7 +53,7 @@ class PandaHammerV2Policy(Policy):
     @staticmethod
     def _grab_effort(o_d: dict[str, npt.NDArray[np.float64]]) -> float:
         pos_curr = o_d["hand_pos"]
-        pos_puck = o_d["hammer_pos"] + np.array([-0.04, 0.0, -0.01])
+        pos_puck = o_d["hammer_pos"] + np.array([0.07, 0.0, -0.01])
 
         if (
             np.linalg.norm(pos_curr[:2] - pos_puck[:2]) > 0.04
@@ -62,4 +62,4 @@ class PandaHammerV2Policy(Policy):
             return 0.0
         # While end effector is moving down toward the hammer, begin closing the grabber
         else:
-            return 0.8
+            return 1.0

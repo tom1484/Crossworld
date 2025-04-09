@@ -24,8 +24,8 @@ class PandaBasketballEnvV2(PandaEnv):
     ) -> None:
         hand_low = (-0.5, 0.40, 0.05)
         hand_high = (0.5, 1, 0.5)
-        obj_low = (-0.1, 0.6, 0.0299)
-        obj_high = (0.1, 0.7, 0.0301)
+        obj_low = (-0.1, 0.5, 0.0299)
+        obj_high = (0.1, 0.6, 0.0301)
         goal_low = (-0.1, 0.85, 0.0)
         goal_high = (0.1, 0.9 + 1e-7, 0.0)
 
@@ -39,7 +39,7 @@ class PandaBasketballEnvV2(PandaEnv):
 
         self.init_config: InitConfigDict = {
             "obj_init_angle": 0.3,
-            "obj_init_pos": np.array([0, 0.6, 0.03], dtype=np.float32),
+            "obj_init_pos": np.array([0, 0.5, 0.03], dtype=np.float32),
             "hand_init_pos": np.array((0, 0.6, 0.2), dtype=np.float32),
         }
         self.goal = np.array([0, 0.9, 0])

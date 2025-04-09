@@ -34,12 +34,16 @@ class PandaFaucetOpenV2Policy(Policy):
 
     @staticmethod
     def _desired_pos(o_d: dict[str, npt.NDArray[np.float64]]) -> npt.NDArray[Any]:
-        pos_curr = o_d["hand_pos"]
-        pos_faucet = o_d["faucet_pos"] + np.array([-0.04, 0.0, 0.03])
+        pos_curr = o_d["hand_pos"] + np.array([0.0, 0.01, 0.0])
+        pos_faucet = o_d["faucet_pos"] + np.array([-0.04, 0.0, 0.05])
+        pos_mid = pos_faucet + np.array([0.04, 0.02, 0.0])
+        pos_final = pos_faucet + np.array([0.1, 0.06, 0.0])
 
-        if np.linalg.norm(pos_curr[:2] - pos_faucet[:2]) > 0.04:
+        if np.linalg.norm(pos_curr[:2] - pos_faucet[:2]) > 0.05:
             return pos_faucet + np.array([0.0, 0.0, 0.1])
-        elif abs(pos_curr[2] - pos_faucet[2]) > 0.04:
+        elif abs(pos_curr[2] - pos_faucet[2]) > 0.05:
             return pos_faucet
+        elif pos_mid[0] - pos_curr[0] > 0.01:
+            return pos_mid
         else:
-            return pos_faucet + np.array([0.1, 0.05, 0.0])
+            return pos_final
