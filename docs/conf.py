@@ -17,18 +17,18 @@
 # -- Project information -----------------------------------------------------
 import os
 
-# import metaworld
+# import crossworld
 
 # from typing import Any, Dict
 
 
-project = "Metaworld"
+project = "Crossworld"
 copyright = "2023 Farama Foundation"
 author = "Farama Foundation"
 
 # The full version, including alpha/beta/rc tags
-# TODO: Replace metaworld, remove comment and remove this line
-# release = metaworld.__version__
+# TODO: Replace crossworld, remove comment and remove this line
+# release = crossworld.__version__
 release = "0.0.1"
 
 
@@ -70,21 +70,21 @@ autodoc_preserve_defaults = True
 # a list of builtin themes.
 #
 html_theme = "furo"
-html_title = "Metaworld Documentation"
-html_baseurl = "https://metaworld.farama.org"
+html_title = "Crossworld Documentation"
+html_baseurl = "https://crossworld.farama.org"
 html_copy_source = False
 html_favicon = "_static/img/favicon.svg"
 html_theme_options = {
-    "light_logo": "img/metaworld_black.svg",
-    "dark_logo": "img/metaworld_white.svg",
+    "light_logo": "img/crossworld_black.svg",
+    "dark_logo": "img/crossworld_white.svg",
     "gtag": "",
     "description": (
         "Collections of robotics environments geared towards "
         "benchmarking multi-task and meta reinforcement learning"
     ),
-    "image": "img/metaworld_black-github.png",
+    "image": "img/crossworld_black-github.png",
     "versioning": True,
-    "source_repository": "https://github.com/Farama-Foundation/Metaworld/",
+    "source_repository": "https://github.com/Farama-Foundation/Crossworld/",
     "source_branch": "master",
     "source_directory": "docs/",
 }

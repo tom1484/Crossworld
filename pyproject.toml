@@ -4,7 +4,7 @@ requires = ["setuptools >= 61.0.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "metaworld"
+name = "crossworld"
 version = "2.0.0"
 description = "Collections of robotics environments geared towards benchmarking multi-task and meta reinforcement learning."
 readme = "README.md"
@@ -49,10 +49,10 @@ Documentation = "https://metaworld.github.io/"
 include-package-data = true
 
 [tool.setuptools.package-data]
-metaworld = ["py.typed"]
+crossworld = ["py.typed"]
 
 [tool.setuptools.packages.find]
-include = ["metaworld", "metaworld.*"]
+include = ["crossworld", "crossworld.*"]
 
 # Linters and Test tools #######################################################
 [tool.black]
@@ -61,7 +61,7 @@ safe = true
 [tool.isort]
 atomic = true
 profile = "black"
-src_paths = ["metaworld", "tests"]
+src_paths = ["crossworld", "tests"]
 
 [tool.mypy]
 plugins = ["numpy.typing.mypy_plugin"]

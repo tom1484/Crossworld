@@ -3,8 +3,8 @@ import pickle
 import numpy as np
 import pytest
 
-import metaworld
-from metaworld import ML1, ML10, ML45, MT10, MT50
+import crossworld
+from crossworld import ML1, ML10, ML45, MT10, MT50
 from tests.helpers import step_env
 
 STEPS = 3
@@ -55,7 +55,7 @@ def test_all_ml1(env_name):
     assert (
         len(train_test_rand_vecs)
         == (len(ml1.test_classes.keys()) + len(ml1.train_classes.keys()))
-        * metaworld._N_GOALS
+        * crossworld._N_GOALS
     )
     del test_env_instances
 
@@ -108,7 +108,7 @@ def test_all_ml10():
     assert (
         len(train_test_rand_vecs)
         == (len(ml10.test_classes.keys()) + len(ml10.train_classes.keys()))
-        * metaworld._N_GOALS
+        * crossworld._N_GOALS
     )
     del test_env_instances
 
@@ -162,7 +162,7 @@ def test_all_ml45():
     assert (
         len(train_test_rand_vecs)
         == (len(ml45.test_classes.keys()) + len(ml45.train_classes.keys()))
-        * metaworld._N_GOALS
+        * crossworld._N_GOALS
     )
     del test_env_instances
 
@@ -243,7 +243,7 @@ def check_tasks_unique(tasks, env_names):
             ]
         )
         unique_task_rand_vecs = np.unique(np.array(env_to_rand_vecs[env_name]), axis=0)
-        assert unique_task_rand_vecs.shape[0] == metaworld._N_GOALS
+        assert unique_task_rand_vecs.shape[0] == crossworld._N_GOALS
     return env_to_rand_vecs
 
 
@@ -271,7 +271,7 @@ def check_target_poss_unique(env_instances, env_rand_vecs):
         state_goals = np.array(state_goals)
         unique_target_poss = np.unique(state_goals, axis=0)
         assert (
-            unique_target_poss.shape[0] == metaworld._N_GOALS == len(rand_vecs)
+            unique_target_poss.shape[0] == crossworld._N_GOALS == len(rand_vecs)
         ), env_name
 
 
@@ -289,35 +289,35 @@ def test_identical_environments():
             assert not (rand_vec_1 == rand_vec_2).all()
 
     # testing MT1
-    mt1_1 = metaworld.MT1("sweep-into-v2", seed=10)
-    mt1_2 = metaworld.MT1("sweep-into-v2", seed=10)
+    mt1_1 = crossworld.MT1("sweep-into-v2", seed=10)
+    mt1_2 = crossworld.MT1("sweep-into-v2", seed=10)
     helper(mt1_1, mt1_2)
 
     # testing ML1
-    ml1_1 = metaworld.ML1("sweep-into-v2", seed=10)
-    ml1_2 = metaworld.ML1("sweep-into-v2", seed=10)
+    ml1_1 = crossworld.ML1("sweep-into-v2", seed=10)
+    ml1_2 = crossworld.ML1("sweep-into-v2", seed=10)
     helper(ml1_1, ml1_2)
 
     # testing MT10
-    mt10_1 = metaworld.MT10(seed=10)
-    mt10_2 = metaworld.MT10(seed=10)
+    mt10_1 = crossworld.MT10(seed=10)
+    mt10_2 = crossworld.MT10(seed=10)
     helper(mt10_1, mt10_2)
 
     # testing ML10
-    ml10_1 = metaworld.ML10(seed=10)
-    ml10_2 = metaworld.ML10(seed=10)
+    ml10_1 = crossworld.ML10(seed=10)
+    ml10_2 = crossworld.ML10(seed=10)
     helper(ml10_1, ml10_2)
 
     # testing ML45
-    ml45_1 = metaworld.ML45(seed=10)
-    ml45_2 = metaworld.ML45(seed=10)
+    ml45_1 = crossworld.ML45(seed=10)
+    ml45_2 = crossworld.ML45(seed=10)
     helper(ml45_1, ml45_2)
 
     # testing MT50
-    mt50_1 = metaworld.MT50(seed=10)
-    mt50_2 = metaworld.MT50(seed=10)
+    mt50_1 = crossworld.MT50(seed=10)
+    mt50_2 = crossworld.MT50(seed=10)
     helper(mt50_1, mt50_2)
 
     # test that 2 benchmarks with different seeds have different goals
-    mt50_3 = metaworld.MT50(seed=50)
+    mt50_3 = crossworld.MT50(seed=50)
     helper_neq(mt50_1, mt50_3)

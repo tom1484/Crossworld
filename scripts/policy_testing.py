@@ -3,8 +3,8 @@ import time
 
 import numpy as np
 
-import metaworld
-from metaworld.policies.sawyer_door_lock_v2_policy import (
+import crossworld
+from crossworld.policies.sawyer_door_lock_v2_policy import (
     SawyerDoorLockV2Policy as policy,
 )
 
@@ -14,7 +14,7 @@ seed = 42
 env_name = "door-lock-v2"
 
 random.seed(seed)
-ml1 = metaworld.MT50(seed=seed)
+ml1 = crossworld.MT50(seed=seed)
 env = ml1.train_classes[env_name]()
 task = [t for t in ml1.train_tasks if t.env_name == env_name][0]
 env.set_task(task)

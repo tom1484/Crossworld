@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Universal environment and policy tester for MetaWorld.
+Universal environment and policy tester for CrossWorld.
 Supports testing environments across different robot arms (Sawyer, Panda, Jaco)
 and provides a framework for testing and developing scripted policies.
 
@@ -26,10 +26,10 @@ import numpy as np
 from collections import OrderedDict
 from datetime import datetime
 
-import metaworld
-from metaworld import Task
-from metaworld.policies.policy import Policy
-from metaworld.policies.policy_dict import ARM_POLICY_CLS_MAPS
+import crossworld
+from crossworld import Task
+from crossworld.policies.policy import Policy
+from crossworld.policies.policy_dict import ARM_POLICY_CLS_MAPS
 
 # Add PyGame import for interactive control
 try:
@@ -88,7 +88,7 @@ EnvType = TypeVar("EnvType")
 PolicyType = TypeVar("PolicyType")
 ObsType = np.ndarray
 ActionType = np.ndarray
-BenchmarkType = Any  # metaworld.Benchmark
+BenchmarkType = Any  # crossworld.Benchmark
 
 
 def get_policy(env_name: str, arm_name: str) -> Optional[Any]:
@@ -245,7 +245,7 @@ def render_frame(env: EnvType, frames: List[np.ndarray]) -> None:
     # Try different rendering approaches to handle API differences
     rgb_array: Optional[np.ndarray] = None
 
-    # For MetaWorld environments, first try without any arguments
+    # For CrossWorld environments, first try without any arguments
     # This should work with initialized render_mode
     try:
         rgb_array = env.render()
@@ -265,7 +265,7 @@ def init_pygame_common(window_size: Tuple[int, int]) -> Tuple[Any, Any]:
 
     pygame.init()
     screen = pygame.display.set_mode(window_size)
-    pygame.display.set_caption("MetaWorld Progress")
+    pygame.display.set_caption("CrossWorld Progress")
     clock = pygame.time.Clock()
     return screen, clock
 
@@ -735,7 +735,7 @@ def keyboard_control(
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Test MetaWorld environments and policies"
+        description="Test CrossWorld environments and policies"
     )
     parser.add_argument(
         "--arm-name",
@@ -853,29 +853,29 @@ def main() -> None:
     # Initialize benchmark based on user's choice
     benchmark: Optional[BenchmarkType] = None
     benchmark_initializers: Dict[str, Callable[[], BenchmarkType]] = {
-        "mt1": lambda: metaworld.MT1(
+        "mt1": lambda: crossworld.MT1(
             env_name=args.env_name,
             arm_name=args.arm_name,
             seed=args.seed,
         ),
-        "mt10": lambda: metaworld.MT10(
+        "mt10": lambda: crossworld.MT10(
             arm_name=args.arm_name,
             seed=args.seed,
         ),
-        "mt50": lambda: metaworld.MT50(
+        "mt50": lambda: crossworld.MT50(
             arm_name=args.arm_name,
             seed=args.seed,
         ),
-        "ml1": lambda: metaworld.ML1(
+        "ml1": lambda: crossworld.ML1(
             env_name=args.env_name,
             arm_name=args.arm_name,
             seed=args.seed,
         ),
-        "ml10": lambda: metaworld.ML10(
+        "ml10": lambda: crossworld.ML10(
             arm_name=args.arm_name,
             seed=args.seed,
         ),
-        "ml45": lambda: metaworld.ML45(
+        "ml45": lambda: crossworld.ML45(
             arm_name=args.arm_name,
             seed=args.seed,
         ),
