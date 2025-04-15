@@ -269,6 +269,25 @@ class ML10(Benchmark):
         )
 
 
+class ML11(Benchmark):
+    """The ML11 benchmark. Contains 10 tasks in its train set and 5 tasks in its test set. The goal position is not part of the observation."""
+
+    def __init__(self, arm_name: str = "sawyer", seed=None):
+        super().__init__()
+        self._train_classes = _env_dict.ML11_V2[arm_name]["train"]
+        self._test_classes = _env_dict.ML11_V2[arm_name]["test"]
+        train_kwargs = _env_dict.ML11_ARGS_KWARGS[arm_name]["train"]
+
+        test_kwargs = _env_dict.ML11_ARGS_KWARGS[arm_name]["test"]
+        self._train_tasks = _make_tasks(
+            self._train_classes, train_kwargs, _ML_OVERRIDE, seed=seed
+        )
+
+        self._test_tasks = _make_tasks(
+            self._test_classes, test_kwargs, _ML_OVERRIDE, seed=seed
+        )
+
+
 class ML45(Benchmark):
     """The ML45 benchmark. Contains 45 tasks in its train set and 5 tasks in its test set (50 in total). The goal position is not part of the observation."""
 

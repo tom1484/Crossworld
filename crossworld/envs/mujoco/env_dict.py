@@ -14,7 +14,6 @@ from typing_extensions import TypeAlias
 
 from crossworld.envs.mujoco.sawyer_xyz import v2 as sawyer_v2
 from crossworld.envs.mujoco.panda import v2 as panda_v2
-from crossworld.envs.mujoco.jaco import v2 as jaco_v2
 from crossworld.envs.mujoco.arm_env import ArmEnv
 
 # Utils
@@ -187,61 +186,6 @@ PANDA_ENVIRONMENTS = OrderedDict(
         ("sweep-v2", panda_v2.PandaSweepEnvV2),
         ("window-open-v2", panda_v2.PandaWindowOpenEnvV2),
         ("window-close-v2", panda_v2.PandaWindowCloseEnvV2),
-    )
-)
-
-JACO_ENVIRONMENTS = OrderedDict(
-    (
-        ("assembly-v2", jaco_v2.PandaNutAssemblyEnvV2),
-        ("basketball-v2", jaco_v2.PandaBasketballEnvV2),
-        ("bin-picking-v2", jaco_v2.PandaBinPickingEnvV2),
-        ("box-close-v2", jaco_v2.PandaBoxCloseEnvV2),
-        ("button-press-topdown-v2", jaco_v2.PandaButtonPressTopdownEnvV2),
-        ("button-press-topdown-wall-v2", jaco_v2.PandaButtonPressTopdownWallEnvV2),
-        ("button-press-v2", jaco_v2.PandaButtonPressEnvV2),
-        ("button-press-wall-v2", jaco_v2.PandaButtonPressWallEnvV2),
-        ("coffee-button-v2", jaco_v2.PandaCoffeeButtonEnvV2),
-        ("coffee-pull-v2", jaco_v2.PandaCoffeePullEnvV2),
-        ("coffee-push-v2", jaco_v2.PandaCoffeePushEnvV2),
-        ("dial-turn-v2", jaco_v2.PandaDialTurnEnvV2),
-        ("disassemble-v2", jaco_v2.PandaNutDisassembleEnvV2),
-        ("door-close-v2", jaco_v2.PandaDoorCloseEnvV2),
-        ("door-lock-v2", jaco_v2.PandaDoorLockEnvV2),
-        ("door-open-v2", jaco_v2.PandaDoorEnvV2),
-        ("door-unlock-v2", jaco_v2.PandaDoorUnlockEnvV2),
-        ("hand-insert-v2", jaco_v2.PandaHandInsertEnvV2),
-        ("drawer-close-v2", jaco_v2.PandaDrawerCloseEnvV2),
-        ("drawer-open-v2", jaco_v2.PandaDrawerOpenEnvV2),
-        ("faucet-open-v2", jaco_v2.PandaFaucetOpenEnvV2),
-        ("faucet-close-v2", jaco_v2.PandaFaucetCloseEnvV2),
-        ("hammer-v2", jaco_v2.PandaHammerEnvV2),
-        ("handle-press-side-v2", jaco_v2.PandaHandlePressSideEnvV2),
-        ("handle-press-v2", jaco_v2.PandaHandlePressEnvV2),
-        ("handle-pull-side-v2", jaco_v2.PandaHandlePullSideEnvV2),
-        ("handle-pull-v2", jaco_v2.PandaHandlePullEnvV2),
-        ("lever-pull-v2", jaco_v2.PandaLeverPullEnvV2),
-        ("peg-insert-side-v2", jaco_v2.PandaPegInsertionSideEnvV2),
-        ("pick-place-wall-v2", jaco_v2.PandaPickPlaceWallEnvV2),
-        ("pick-out-of-hole-v2", jaco_v2.PandaPickOutOfHoleEnvV2),
-        ("reach-v2", jaco_v2.PandaReachEnvV2),
-        ("push-back-v2", jaco_v2.PandaPushBackEnvV2),
-        ("push-v2", jaco_v2.PandaPushEnvV2),
-        ("pick-place-v2", jaco_v2.PandaPickPlaceEnvV2),
-        ("plate-slide-v2", jaco_v2.PandaPlateSlideEnvV2),
-        ("plate-slide-side-v2", jaco_v2.PandaPlateSlideSideEnvV2),
-        ("plate-slide-back-v2", jaco_v2.PandaPlateSlideBackEnvV2),
-        ("plate-slide-back-side-v2", jaco_v2.PandaPlateSlideBackSideEnvV2),
-        ("peg-unplug-side-v2", jaco_v2.PandaPegUnplugSideEnvV2),
-        ("soccer-v2", jaco_v2.PandaSoccerEnvV2),
-        ("stick-push-v2", jaco_v2.PandaStickPushEnvV2),
-        ("stick-pull-v2", jaco_v2.PandaStickPullEnvV2),
-        ("push-wall-v2", jaco_v2.PandaPushWallEnvV2),
-        ("reach-wall-v2", jaco_v2.PandaReachWallEnvV2),
-        ("shelf-place-v2", jaco_v2.PandaShelfPlaceEnvV2),
-        ("sweep-into-v2", jaco_v2.PandaSweepIntoGoalEnvV2),
-        ("sweep-v2", jaco_v2.PandaSweepEnvV2),
-        ("window-open-v2", jaco_v2.PandaWindowOpenEnvV2),
-        ("window-close-v2", jaco_v2.PandaWindowCloseEnvV2),
     )
 )
 
@@ -497,6 +441,48 @@ ML10_ARGS_KWARGS = OrderedDict(
                 ),
                 "test": _get_args_kwargs(
                     ALL_V2_ENVIRONMENTS, ML10_V2[arm_name]["test"]
+                ),
+            },
+        )
+        for arm_name in ARM_NAMES
+    ]
+)
+
+ML11_V2 = OrderedDict(
+    [
+        (
+            arm_name,
+            _get_train_test_env_dict(
+                train_env_names=[
+                    "door-open-v2",
+                    "door-close-v2",
+                    "basketball-v2",
+                    "shelf-place-v2",
+                    "button-press-v2",
+                    "button-press-topdown-v2",
+                    "faucet-close-v2",
+                    "faucet-open-v2",
+                    "handle-press-v2",
+                    "hammer-v2",
+                    "assembly-v2",
+                ],
+                test_env_names=[],
+                arm_name=arm_name,
+            ),
+        )
+        for arm_name in ARM_NAMES
+    ]
+)
+ML11_ARGS_KWARGS = OrderedDict(
+    [
+        (
+            arm_name,
+            {
+                "train": _get_args_kwargs(
+                    ALL_V2_ENVIRONMENTS, ML11_V2[arm_name]["train"]
+                ),
+                "test": _get_args_kwargs(
+                    ALL_V2_ENVIRONMENTS, ML11_V2[arm_name]["test"]
                 ),
             },
         )
