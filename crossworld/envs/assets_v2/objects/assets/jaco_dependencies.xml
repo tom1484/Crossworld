@@ -1,0 +1,53 @@
+<mujocoinclude>
+  <compiler angle="radian" inertiafromgeom="auto" inertiagrouprange="0 0" />
+
+  <asset>
+    <!-- Mount material and mesh -->
+    <mesh file="../objects/meshes/rethink_mount/pedestal.stl" name="pedestal" />
+
+    <!-- Robot meshes -->
+    <mesh name="base" file="../objects/meshes/jaco/base.stl" />
+    <mesh name="shoulder" file="../objects/meshes/jaco/shoulder.stl" />
+    <mesh name="ring_big" file="../objects/meshes/jaco/ring_big.stl" />
+    <mesh name="arm_half_1" file="../objects/meshes/jaco/arm_half_1.stl" />
+    <mesh name="arm_half_2" file="../objects/meshes/jaco/arm_half_2.stl" />
+    <mesh name="forearm" file="../objects/meshes/jaco/forearm.stl" />
+    <mesh name="ring_small" file="../objects/meshes/jaco/ring_small.stl" />
+    <mesh name="wrist_spherical_1" file="../objects/meshes/jaco/wrist_spherical_1.stl" />
+    <mesh name="wrist_spherical_2" file="../objects/meshes/jaco/wrist_spherical_2.stl" />
+
+    <!-- Materials for robot -->
+    <texture type="cube" name="carbon_tex" builtin="flat" width="100" height="100" rgb1="1 1 1"
+      rgb2="1 1 1" />
+    <texture type="cube" name="grey_plastic_tex" builtin="flat" width="100" height="100"
+      rgb1="1 1 1" rgb2="1 1 1" />
+    <material name="carbon_jaco" texture="carbon_tex" rgba="0.05 0.05 0.05 1" />
+    <material name="grey_plastic_jaco" texture="grey_plastic_tex" rgba="0.88 0.86 0.86 1" />
+
+    <!-- Gripper meshes -->
+    <mesh name="hand_3finger" file="../objects/meshes/jaco_three_finger_gripper/hand_3finger.stl" />
+    <mesh name="finger_proximal"
+      file="../objects/meshes/jaco_three_finger_gripper/finger_proximal.stl" />
+    <mesh name="finger_distal" file="../objects/meshes/jaco_three_finger_gripper/finger_distal.stl" />
+
+    <!-- Materials for robot -->
+    <material name="carbon_hand" texture="carbon_tex" rgba="0.05 0.05 0.05 1" />
+    <material name="grey_plastic_hand" texture="grey_plastic_tex" rgba="0.88 0.86 0.86 1" />
+
+  </asset>
+
+  <!-- <default>
+    <geom contype='1' conaffinity='1' condim='3' margin="0.001" />
+
+    <joint limited="false" damping="0" armature=".01" />
+
+    <default class="vizNcoll">
+      <geom material="MatViz" type="mesh" condim="3" contype="1" conaffinity="1" margin="0.001" />
+      <joint pos="0 0 0" type="hinge" />
+    </default>
+    <default class="ground">
+      <geom type="plane" margin="0.001" contype="1" />
+    </default>
+  </default> -->
+
+</mujocoinclude>

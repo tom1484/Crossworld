@@ -35,8 +35,12 @@ PANDA_POLICIES = OrderedDict(
     [(env_name, import_policy("panda", env_name)) for env_name in ALL_V2_ENVIRONMENTS]
 )
 
+JACO_POLICIES = OrderedDict(
+    [(env_name, import_policy("jaco", env_name)) for env_name in ALL_V2_ENVIRONMENTS]
+)
+
 ARM_POLICY_CLS_MAPS = OrderedDict(
-    (("sawyer", SAWYER_POLICIES), ("panda", PANDA_POLICIES))
+    (("sawyer", SAWYER_POLICIES), ("panda", PANDA_POLICIES), ("jaco", JACO_POLICIES))
 )
 
 
